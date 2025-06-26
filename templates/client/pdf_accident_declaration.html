@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Accident Declaration - {{ declaration.id }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #2c3e50; }
+        .section { margin-bottom: 20px; }
+        .section h2 { color: #3498db; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .image-container { margin: 10px 0; }
+        .image-container img { max-width: 100%; height: auto; border: 1px solid #ddd; }
+        .row { display: flex; margin-bottom: 10px; }
+        .label { font-weight: bold; width: 200px; }
+        .value { flex: 1; }
+        .footer { margin-top: 30px; text-align: right; font-size: 0.9em; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Accident Declaration</h1>
+            <p>Declaration ID: {{ declaration.id }}</p>
+            <p>Date: {{ now.strftime('%Y-%m-%d %H:%M') }}</p>
+        </div>
+
+        <div class="section">
+            <h2>Basic Information</h2>
+            <div class="row">
+                <div class="label">Declarant Name:</div>
+                <div class="value">{{ declaration.name }}</div>
+            </div>
+            <div class="row">
+                <div class="label">Car Type:</div>
+                <div class="value">{{ declaration.car_type }}</div>
+            </div>
+            <div class="row">
+                <div class="label">Plate License:</div>
+                <div class="value">{{ declaration.plate_license }}</div>
+            </div>
+            <div class="row">
+                <div class="label">Accident Date/Time:</div>
+                <div class="value">{{ declaration.accident_datetime.strftime('%Y-%m-%d %H:%M') if declaration.accident_datetime else 'N/A' }}</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Accident Details</h2>
+            <div class="row">
+                <div class="label">OPG Measured:</div>
+                <div class="value">{{ 'Yes' if declaration.opg_measure else 'No' }}</div>
+            </div>
+            <div class="row">
+                <div class="label">Car Working:</div>
+                <div class="value">{{ 'Yes' if declaration.car_working else 'No' }}</div>
+            </div>
+            <div class="row">
+                <div class="label">Injured People:</div>
+                <div class="value">{{ 'Yes' if declaration.injured_people else 'No' }}</div>
+            </div>
+            <div class="row">
+                <div class="label">Car Damage:</div>
+                <div class="value">{{ declaration.car_damage or 'N/A' }}</div>
+            </div>
+        </div>
+
+        {% if declaration.opj_name or declaration.opj_phone %}
+        <div class="section">
+            <h2>OPJ Information</h2>
+            <div class="row">
+                <div class="label">OPJ Name:</div>
+                <div class="value">{{ declaration.opj_name or 'N/A' }}</div>
+            </div>
+            <div class="row">
+                <div class="label">OPJ Phone:</div>
+                <div class="value">{{ declaration.opj_phone or 'N/A' }}</div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if declaration.collided_with_name or declaration.collided_with_plate %}
+        <div class="section">
+            <h2>Collision Information</h2>
+            <div class="row">
+                <div class="label">Collided With:</div>
+                <div class="value">{{ declaration.collided_with_name or 'N/A' }}</div>
+            </div>
+            <div class="row">
+                <div class="label">Their Plate:</div>
+                <div class="value">{{ declaration.collided_with_plate or 'N/A' }}</div>
+            </div>
+            <div class="row">
+                <div class="label">Their Damage:</div>
+                <div class="value">{{ declaration.collided_damage or 'N/A' }}</div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if declaration.injured_details %}
+        <div class="section">
+            <h2>Injured People Details</h2>
+            <div class="value">{{ declaration.injured_details }}</div>
+        </div>
+        {% endif %}
+
+        {% if declaration.witness %}
+        <div class="section">
+            <h2>Witness Information</h2>
+            <div class="value">{{ declaration.witness }}</div>
+        </div>
+        {% endif %}
+
+        <div class="section">
+            <h2>Accident Summary</h2>
+            <div class="value">{{ declaration.summary }}</div>
+        </div>
+
+        {% if images.accident_image1 or images.accident_image2 or images.accident_image3 %}
+        <div class="section">
+            <h2>Accident Images</h2>
+            {% if images.accident_image1 %}
+            <div class="image-container">
+                <img src="{{ images.accident_image1 }}" alt="Accident Image 1">
+            </div>
+            {% endif %}
+            {% if images.accident_image2 %}
+            <div class="image-container">
+                <img src="{{ images.accident_image2 }}" alt="Accident Image 2">
+            </div>
+            {% endif %}
+            {% if images.accident_image3 %}
+            <div class="image-container">
+                <img src="{{ images.accident_image3 }}" alt="Accident Image 3">
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if images.carte_rose_image or images.insurance_card_image or images.driving_license_image %}
+        <div class="section">
+            <h2>Document Images</h2>
+            {% if images.carte_rose_image %}
+            <div class="image-container">
+                <img src="{{ images.carte_rose_image }}" alt="Carte Rose">
+            </div>
+            {% endif %}
+            {% if images.insurance_card_image %}
+            <div class="image-container">
+                <img src="{{ images.insurance_card_image }}" alt="Insurance Card">
+            </div>
+            {% endif %}
+            {% if images.driving_license_image %}
+            <div class="image-container">
+                <img src="{{ images.driving_license_image }}" alt="Driving License">
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            <p>Generated on {{ now.strftime('%Y-%m-%d at %H:%M') }}</p>
+        </div>
+    </div>
+</body>
+</html>

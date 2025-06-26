@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Declare Accident{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Welcome to Declaration page</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-4">
+                        <h5 class="text-primary">Step 1: Tell us about you and the Accident</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                {{ form.name.label(class="form-label") }}
+                                {{ form.name(class="form-control") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.car_type.label(class="form-label") }}
+                                {{ form.car_type(class="form-control") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.plate_license.label(class="form-label") }}
+                                {{ form.plate_license(class="form-control") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.accident_datetime.label(class="form-label") }}
+                                {{ form.accident_datetime(class="form-control", type="datetime-local") }}
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.opg_measure(class="form-check-input") }}
+                                    {{ form.opg_measure.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.car_working(class="form-check-input") }}
+                                    {{ form.car_working.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.opj_name.label(class="form-label") }}
+                                {{ form.opj_name(class="form-control") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.opj_phone.label(class="form-label") }}
+                                {{ form.opj_phone(class="form-control") }}
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    {{ form.injured_people(class="form-check-input") }}
+                                    {{ form.injured_people.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                {{ form.car_damage.label(class="form-label") }}
+                                {{ form.car_damage(class="form-control") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.collided_with_name.label(class="form-label") }}
+                                {{ form.collided_with_name(class="form-control") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.collided_with_plate.label(class="form-label") }}
+                                {{ form.collided_with_plate(class="form-control") }}
+                            </div>
+                            <div class="col-12">
+                                {{ form.collided_damage.label(class="form-label") }}
+                                {{ form.collided_damage(class="form-control") }}
+                            </div>
+                            <div class="col-12">
+                                {{ form.injured_details.label(class="form-label") }}
+                                {{ form.injured_details(class="form-control", rows=2) }}
+                            </div>
+                            <div class="col-12">
+                                {{ form.witness.label(class="form-label") }}
+                                {{ form.witness(class="form-control", rows=2) }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5 class="text-primary">Step 2: Upload Required Images</h5>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                {{ form.accident_image1.label(class="form-label") }}
+                                <input type="file" class="form-control" name="accident_image1" required>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.accident_image2.label(class="form-label") }}
+                                <input type="file" class="form-control" name="accident_image2">
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.accident_image3.label(class="form-label") }}
+                                <input type="file" class="form-control" name="accident_image3">
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.carte_rose_image.label(class="form-label") }}
+                                <input type="file" class="form-control" name="carte_rose_image" required>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.insurance_card_image.label(class="form-label") }}
+                                <input type="file" class="form-control" name="insurance_card_image" required>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.driving_license_image.label(class="form-label") }}
+                                <input type="file" class="form-control" name="driving_license_image" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5 class="text-primary">Step 3: Resume Your Accident</h5>
+                        {{ form.summary.label(class="form-label") }}
+                        {{ form.summary(class="form-control", rows=4) }}
+                    </div>
+                    
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

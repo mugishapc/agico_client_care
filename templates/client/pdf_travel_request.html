@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Insurance Request - {{ request.id }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+        }
+        .header h1 {
+            margin: 10px 0 5px 0;
+            color: #2c3e50;
+        }
+        .details {
+            margin-bottom: 30px;
+        }
+        .details h2 {
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .label {
+            font-weight: bold;
+            width: 40%;
+        }
+        .value {
+            width: 60%;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 0.8em;
+            color: #777;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .document-section {
+            margin-top: 30px;
+            page-break-inside: avoid;
+        }
+        .document-image {
+            max-width: 100%;
+            max-height: 300px;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+        }
+        .document-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .page-break {
+            page-break-after: always;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>BIC Client Care</h1>
+        <h2>Travel Insurance Request</h2>
+        <p>Request ID: {{ request.id }}</p>
+    </div>
+
+    <div class="details">
+        <h2>Request Details</h2>
+        <div class="row">
+            <div class="label">Client:</div>
+            <div class="value">{{ request.user.first_name }} {{ request.user.last_name }}</div>
+        </div>
+        <div class="row">
+            <div class="label">Email:</div>
+            <div class="value">{{ request.email }}</div>
+        </div>
+        <div class="row">
+            <div class="label">Phone:</div>
+            <div class="value">{{ request.phone }}</div>
+        </div>
+        <div class="row">
+            <div class="label">Destination:</div>
+            <div class="value">{{ request.destination }}</div>
+        </div>
+        <div class="row">
+            <div class="label">Duration:</div>
+            <div class="value">{{ request.days }} days</div>
+        </div>
+        <div class="row">
+            <div class="label">Status:</div>
+            <div class="value" style="text-transform: capitalize;">{{ request.status }}</div>
+        </div>
+        <div class="row">
+            <div class="label">Date Submitted:</div>
+            <div class="value">{{ request.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+        </div>
+    </div>
+
+    {% if passport_uri %}
+    <div class="document-section">
+        <h2>Supporting Documents</h2>
+        <div class="document-label">Passport:</div>
+        <img src="{{ passport_uri }}" class="document-image" alt="Passport Image">
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>Generated on {{ now.strftime('%Y-%m-%d %H:%M') }}</p>
+        <p>BIC Client Care System</p>
+    </div>
+</body>
+</html>

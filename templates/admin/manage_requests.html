@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% block title %}Manage Requests{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Manage Insurance Requests</h5>
+                    <div>
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-sm btn-light">
+                            <i class="bi bi-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <select class="form-select" id="requestTypeFilter">
+                            <option value="all" {% if request_type == 'all' %}selected{% endif %}>All Request Types</option>
+                            <option value="auto" {% if request_type == 'auto' %}selected{% endif %}>Auto Insurance</option>
+                            <option value="travel" {% if request_type == 'travel' %}selected{% endif %}>Travel Insurance</option>
+                            <option value="comesa" {% if request_type == 'comesa' %}selected{% endif %}>COMESA Insurance</option>
+                            <option value="accident" {% if request_type == 'accident' %}selected{% endif %}>Accident Declarations</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" id="statusFilter">
+                            <option value="all" {% if status == 'all' %}selected{% endif %}>All Statuses</option>
+                            <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="approved" {% if status == 'approved' %}selected{% endif %}>Approved</option>
+                            <option value="rejected" {% if status == 'rejected' %}selected{% endif %}>Rejected</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Search..." id="searchInput" value="{{ search }}">
+                            <button class="btn btn-primary" type="button" id="searchButton">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Client</th>
+                                <th>Details</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in auto_requests %}
+                                <tr>
+                                    <td>Auto Insurance</td>
+                                    <td>{{ request.user.first_name }} {{ request.user.last_name }}</td>
+                                    <td>
+                                        <small>Phone: {{ request.phone }}</small>
+                                    </td>
+                                    <td>{{ request.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if request.status == 'approved' else 'warning' if request.status == 'pending' else 'danger' }}">
+                                            {{ request.status|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="#" class="btn btn-outline-primary" title="View">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('approve_request', type='auto', id=request.id) }}" class="btn btn-outline-success" title="Approve">
+                                                <i class="bi bi-check-circle"></i>
+                                            </a>
+                                            <a href="{{ url_for('reject_request', type='auto', id=request.id) }}" class="btn btn-outline-danger" title="Reject">
+                                                <i class="bi bi-x-circle"></i>
+                                            </a>
+                                            <a href="{{ url_for('download_request', type='auto', id=request.id) }}" class="btn btn-outline-secondary" title="Download">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            
+                            {% for request in travel_requests %}
+                                <tr>
+                                    <td>Travel Insurance</td>
+                                    <td>{{ request.user.first_name }} {{ request.user.last_name }}</td>
+                                    <td>
+                                        <small>Destination: {{ request.destination }}, Days: {{ request.days }}</small>
+                                    </td>
+                                    <td>{{ request.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if request.status == 'approved' else 'warning' if request.status == 'pending' else 'danger' }}">
+                                            {{ request.status|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="#" class="btn btn-outline-primary" title="View">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('approve_request', type='travel', id=request.id) }}" class="btn btn-outline-success" title="Approve">
+                                                <i class="bi bi-check-circle"></i>
+                                            </a>
+                                            <a href="{{ url_for('reject_request', type='travel', id=request.id) }}" class="btn btn-outline-danger" title="Reject">
+                                                <i class="bi bi-x-circle"></i>
+                                            </a>
+                                            <a href="{{ url_for('download_request', type='travel', id=request.id) }}" class="btn btn-outline-secondary" title="Download">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            
+                            {% for request in comesa_requests %}
+                                <tr>
+                                    <td>COMESA Insurance</td>
+                                    <td>{{ request.user.first_name }} {{ request.user.last_name }}</td>
+                                    <td>
+                                        <small>Phone: {{ request.phone }}</small>
+                                    </td>
+                                    <td>{{ request.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if request.status == 'approved' else 'warning' if request.status == 'pending' else 'danger' }}">
+                                            {{ request.status|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="#" class="btn btn-outline-primary" title="View">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('approve_request', type='comesa', id=request.id) }}" class="btn btn-outline-success" title="Approve">
+                                                <i class="bi bi-check-circle"></i>
+                                            </a>
+                                            <a href="{{ url_for('reject_request', type='comesa', id=request.id) }}" class="btn btn-outline-danger" title="Reject">
+                                                <i class="bi bi-x-circle"></i>
+                                            </a>
+                                            <a href="{{ url_for('download_request', type='comesa', id=request.id) }}" class="btn btn-outline-secondary" title="Download">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            
+                            {% for declaration in accident_declarations %}
+                                <tr>
+                                    <td>Accident Declaration</td>
+                                    <td>{{ declaration.user.first_name }} {{ declaration.user.last_name }}</td>
+                                    <td>
+                                        <small>{{ declaration.car_type }} ({{ declaration.plate_license }})</small>
+                                    </td>
+                                    <td>{{ declaration.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if declaration.status == 'approved' else 'warning' if declaration.status == 'pending' else 'danger' }}">
+                                            {{ declaration.status|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="#" class="btn btn-outline-primary" title="View">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('approve_request', type='accident', id=declaration.id) }}" class="btn btn-outline-success" title="Approve">
+                                                <i class="bi bi-check-circle"></i>
+                                            </a>
+                                            <a href="{{ url_for('reject_request', type='accident', id=declaration.id) }}" class="btn btn-outline-danger" title="Reject">
+                                                <i class="bi bi-x-circle"></i>
+                                            </a>
+                                            <a href="{{ url_for('download_request', type='accident', id=declaration.id) }}" class="btn btn-outline-secondary" title="Download">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1">Previous</a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    // Filter functionality
+    document.getElementById('requestTypeFilter').addEventListener('change', function() {
+        const type = this.value;
+        const status = document.getElementById('statusFilter').value;
+        const search = document.getElementById('searchInput').value;
+        
+        let url = "{{ url_for('manage_requests') }}?type=" + type;
+        if (status !== 'all') url += "&status=" + status;
+        if (search) url += "&search=" + encodeURIComponent(search);
+        
+        window.location.href = url;
+    });
+    
+    document.getElementById('statusFilter').addEventListener('change', function() {
+        const status = this.value;
+        const type = document.getElementById('requestTypeFilter').value;
+        const search = document.getElementById('searchInput').value;
+        
+        let url = "{{ url_for('manage_requests') }}?status=" + status;
+        if (type !== 'all') url += "&type=" + type;
+        if (search) url += "&search=" + encodeURIComponent(search);
+        
+        window.location.href = url;
+    });
+    
+    document.getElementById('searchButton').addEventListener('click', function() {
+        const search = document.getElementById('searchInput').value;
+        const type = document.getElementById('requestTypeFilter').value;
+        const status = document.getElementById('statusFilter').value;
+        
+        let url = "{{ url_for('manage_requests') }}?search=" + encodeURIComponent(search);
+        if (type !== 'all') url += "&type=" + type;
+        if (status !== 'all') url += "&status=" + status;
+        
+        window.location.href = url;
+    });
+    
+    // Allow pressing Enter in search field
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            document.getElementById('searchButton').click();
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

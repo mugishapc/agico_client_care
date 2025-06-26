@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Chat With Us{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Chat With Customer Service</h4>
+            </div>
+            <div class="card-body">
+                <div class="chat-container" id="chatContainer">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="chat-message {% if message.is_admin %}admin-message{% else %}user-message{% endif %}">
+                                <div class="message-content">{{ message.content }}</div>
+                                <div class="message-meta">
+                                    <span class="message-sender">
+                                        {% if message.is_admin %}
+                                            Support Agent
+                                        {% else %}
+                                            You
+                                        {% endif %}
+                                    </span>
+                                    <span class="message-time">
+                                        {{ message.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            No messages yet. Start the conversation!
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <form id="chatForm" method="POST" action="{{ url_for('chat') }}">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" name="message" 
+                               placeholder="Type your message..." required>
+                        <button class="btn btn-primary" type="submit">
+                            <i class="bi bi-send"></i> Send
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    // Auto-scroll to bottom of chat
+    const chatContainer = document.getElementById('chatContainer');
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    
+    // Optional: Add AJAX for better user experience
+    document.getElementById('chatForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const form = this;
+        const formData = new FormData(form);
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+</script>
+{% endblock %}
+{% endblock %}

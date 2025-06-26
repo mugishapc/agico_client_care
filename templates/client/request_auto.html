@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Request Auto Insurance{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Auto Insurance Request</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" action="{{ url_for('request_auto') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-4">
+                        <h5 class="text-primary">Required Documents</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="carte_rose" class="form-label">Carte Rose Image</label>
+                                <input type="file" class="form-control" id="carte_rose" name="carte_rose" accept="image/*" required>
+                                <small class="text-muted">Upload a clear image of your Carte Rose</small>
+                                
+                                <div class="mt-2">
+                                    <img id="carteRosePreview" class="upload-preview img-thumbnail" style="display: none; max-width: 100%; max-height: 200px;">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="ancient_card" class="form-label">Ancient Card Image</label>
+                                <input type="file" class="form-control" id="ancient_card" name="ancient_card" accept="image/*" required>
+                                <small class="text-muted">Upload your previous insurance card</small>
+                                
+                                <div class="mt-2">
+                                    <img id="ancientCardPreview" class="upload-preview img-thumbnail" style="display: none; max-width: 100%; max-height: 200px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5 class="text-primary">Contact Information</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                {{ form.phone.label(class="form-label") }}
+                                {{ form.phone(class="form-control", placeholder="Your mobile number") }}
+                                {% if form.phone.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.phone.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+// Image preview functionality
+function setupImagePreview(inputId, previewId) {
+    const input = document.getElementById(inputId);
+    const preview = document.getElementById(previewId);
+    
+    input.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            
+            reader.addEventListener('load', function() {
+                preview.style.display = 'block';
+                preview.setAttribute('src', this.result);
+            });
+            
+            reader.readAsDataURL(file);
+        } else {
+            preview.style.display = 'none';
+            preview.removeAttribute('src');
+        }
+    });
+}
+
+// Set up previews for both file inputs
+setupImagePreview('carte_rose', 'carteRosePreview');
+setupImagePreview('ancient_card', 'ancientCardPreview');
+
+// Client-side validation for file uploads
+document.querySelector('form').addEventListener('submit', function(e) {
+    const carteRose = document.getElementById('carte_rose');
+    const ancientCard = document.getElementById('ancient_card');
+    let valid = true;
+    
+    if (!carteRose.files.length) {
+        alert('Please upload a Carte Rose image');
+        valid = false;
+    }
+    
+    if (!ancientCard.files.length) {
+        alert('Please upload an Ancient Card image');
+        valid = false;
+    }
+    
+    if (!valid) {
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

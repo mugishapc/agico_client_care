@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Our Branches{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">BIC Branches</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Branch Name</th>
+                                <th>Phone Number</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for branch in branches %}
+                                <tr>
+                                    <td>{{ branch.name }}</td>
+                                    <td>{{ branch.phone }}</td>
+                                    <td>
+                                        <a href="tel:{{ branch.phone }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-telephone"></i> Call
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-4">
+                    <h5 class="text-primary">Branch Locations</h5>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> All our branches are open from Monday to Friday, 8:00 AM to 4:00 PM.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
