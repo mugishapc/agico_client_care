@@ -6,7 +6,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">BIC Branches</h4>
+                <h4 class="mb-0">BIC Branches/ Agencies</h4>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -15,17 +15,24 @@
                             <tr>
                                 <th>Branch Name</th>
                                 <th>Phone Number</th>
-                                <th>Action</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for branch in branches %}
                                 <tr>
                                     <td>{{ branch.name }}</td>
-                                    <td>{{ branch.phone }}</td>
                                     <td>
-                                        <a href="tel:{{ branch.phone }}" class="btn btn-sm btn-outline-primary">
+                                        <a href="https://wa.me/{{ branch.phone }}" target="_blank" class="text-primary">
+                                            {{ branch.phone }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="tel:{{ branch.phone }}" class="btn btn-sm btn-outline-primary me-2">
                                             <i class="bi bi-telephone"></i> Call
+                                        </a>
+                                        <a href="https://wa.me/{{ branch.phone }}" class="btn btn-sm btn-outline-success" target="_blank">
+                                            <i class="bi bi-whatsapp"></i> WhatsApp
                                         </a>
                                     </td>
                                 </tr>
@@ -37,7 +44,7 @@
                 <div class="mt-4">
                     <h5 class="text-primary">Branch Locations</h5>
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> All our branches are open from Monday to Friday, 8:00 AM to 4:00 PM.
+                        <i class="bi bi-info-circle"></i> All our branches are open from Monday to Friday, 7:30 AM to 5:30 PM, and on weekends from 11:00 AM to 3:00 PM.
                     </div>
                 </div>
             </div>

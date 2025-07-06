@@ -7,7 +7,6 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, SelectField, TextAreaField, IntegerField, BooleanField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError
 from flask_uploads import UploadSet, configure_uploads, IMAGES, DOCUMENTS
-from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -18,7 +17,8 @@ from xhtml2pdf import pisa
 from io import BytesIO
 import logging
 from flask import current_app, Response
-from flask_mail import Mail, Message as MailMessage
+from flask_mail import Mail, Message as MailMessage  # Changed import to avoid conflict
+from sqlalchemy.exc import SQLAlchemyError
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -77,19 +77,79 @@ class User(UserMixin, db.Model):
     travel_insurance_requests = db.relationship('TravelInsuranceRequest', back_populates='user', lazy=True)
     comesa_insurance_requests = db.relationship('ComesaInsuranceRequest', back_populates='user', lazy=True)
     accident_declarations = db.relationship('AccidentDeclaration', back_populates='user', lazy=True)
-    messages_sent = db.relationship('Message', foreign_keys='Message.user_id', backref='sender', lazy=True)
-    messages_received = db.relationship('Message', foreign_keys='Message.admin_id', backref='admin', lazy=True)
-    
+
+    messages_sent = db.relationship(
+        'Message',
+        foreign_keys='Message.user_id',
+        backref='sender',
+        lazy=True
+    )
+    messages_received = db.relationship(
+        'Message',
+        foreign_keys='Message.admin_id',
+        backref='receiver',
+        lazy=True
+    )
+
     def __repr__(self):
         return f'<User {self.email}>'
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    admin_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # sender id
+    admin_id = db.Column(db.Integer, db.ForeignKey('user.id'))  # receiver id (admin)
     is_admin = db.Column(db.Boolean, default=False)
+    is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Message {self.id} - User: {self.user_id}, Admin: {self.admin_id}>'
+
+# Email sending functions - CORRECTED VERSION
+def send_confirmation_email(to, subject_suffix):
+    try:
+        msg = MailMessage(
+            subject=f'BIC Client Care - {subject_suffix} Received',
+            recipients=[to],
+            body=f'''
+Thank you for your {subject_suffix.lower()}.
+
+We have received your submission and will process it shortly.
+You can check the status in your BIC Client Care dashboard.
+
+Best regards,
+BIC Client Care Team
+'''
+        )
+        mail.send(msg)
+        logger.info(f"Confirmation email sent to {to}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send confirmation email: {str(e)}")
+        return False
+
+def send_status_email(recipient, request_type, status):
+    try:
+        msg = MailMessage(
+            subject=f'Your {request_type} has been {status}',
+            recipients=[recipient],
+            body=f'''
+Your {request_type} has been {status}.
+
+You can view the details in your BIC Client Care dashboard.
+
+Best regards,
+BIC Client Care Team
+'''
+        )
+        mail.send(msg)
+        logger.info(f"Status email sent to {recipient} about {request_type} status: {status}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send status email: {str(e)}")
+        return False
+
 
 class AutoInsuranceRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -113,6 +173,9 @@ class TravelInsuranceRequest(db.Model):
     destination = db.Column(db.String(100), nullable=False)
     days = db.Column(db.Integer, nullable=False)
     status = db.Column(db.String(20), default='pending')
+    departure_date = db.Column(db.Date, nullable=True)
+    return_date = db.Column(db.Date, nullable=True)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class ComesaInsuranceRequest(db.Model):
@@ -338,6 +401,10 @@ def request_auto():
         
         db.session.add(request_auto)
         db.session.commit()
+        
+        # Send confirmation email
+        send_confirmation_email(current_user.email, "Auto Insurance Request")
+        
         flash('Your auto insurance request has been submitted!', 'success')
         return redirect(url_for('dashboard'))
     
@@ -366,6 +433,10 @@ def request_travel():
         
         db.session.add(request_travel)
         db.session.commit()
+        
+        # Send confirmation email
+        send_confirmation_email(current_user.email, "Travel Insurance Request")
+        
         flash('Your travel insurance request has been submitted!', 'success')
         return redirect(url_for('dashboard'))
     
@@ -399,6 +470,10 @@ def request_comesa():
         
         db.session.add(request_comesa)
         db.session.commit()
+        
+        # Send confirmation email
+        send_confirmation_email(current_user.email, "COMESA Insurance Request")
+        
         flash('Your COMESA insurance request has been submitted!', 'success')
         return redirect(url_for('dashboard'))
     
@@ -451,6 +526,10 @@ def declare_accident():
         
         db.session.add(declaration)
         db.session.commit()
+        
+        # Send confirmation email
+        send_confirmation_email(current_user.email, "Accident Declaration")
+        
         flash('Your accident declaration has been submitted!', 'success')
         return redirect(url_for('dashboard'))
     
@@ -461,19 +540,35 @@ def declare_accident():
 def branches():
     branches_list = [
         {'name': 'BIC SIEGE', 'phone': '+25762555777'},
-        {'name': 'AGENCE KAMENGE', 'phone': '+25762555777'},
-        {'name': 'AGENCE KINAMA', 'phone': '+25762555777'},
-        {'name': 'AGENCE CARAMA', 'phone': '+25762555777'},
-        {'name': 'AGENCE NGOZI', 'phone': '+25762555777'},
-        {'name': 'AGENCE KIRUNDO', 'phone': '+25762555777'},
-        {'name': 'AGENCE MUYINGA', 'phone': '+25762555777'},
-        {'name': 'AGENCE RUYIGI', 'phone': '+25762555777'},
-        {'name': 'AGENCE KAYANZA', 'phone': '+25762555777'},
-        {'name': 'AGENCE RUBIRIZI', 'phone': '+25762555777'},
-        {'name': 'AGENCE GITEGA', 'phone': '+25762555777'},
-        {'name': 'AGENCE RUTANA', 'phone': '+25762555777'},
-        {'name': 'AGENCE MWARO', 'phone': '+25762555777'},
-        {'name': 'GLOBAL SUPPORT', 'phone': '+25762555777'}
+        {'name': 'AGENCE KAMENGE', 'phone': '+25779721192'},
+        {'name': 'AGENCE KINAMA II', 'phone': '+25769100024'},
+        {'name': 'AGENCE CARAMA II', 'phone': '+25765183560'},
+        {'name': 'AGENCE NGOZI', 'phone': '+25779726410'},
+        {'name': 'AGENCE KIRUNDO', 'phone': '+25779884523'},
+        {'name': 'AGENCE MUYINGA/KOBERO I', 'phone': '+25769776088'},
+        {'name': 'AGENCE RUYIGI', 'phone': '+25769487436'},
+        {'name': 'AGENCE KAYANZA V', 'phone': '+25769305007'},
+        {'name': 'AGENCE KAYANZA II', 'phone': '+25761685573'},
+        {'name': 'AGENCE RUBIRIZI', 'phone': '+25769406473'},
+        {'name': 'AGENCE GITEGA', 'phone': '+25762274776'},
+        {'name': 'AGENCE RUTANA', 'phone': '+25767539556'},
+        {'name': 'AGENCE RUTANA/GIHARO', 'phone': '+25768147654'},
+        {'name': 'AGENCE RUMONGE', 'phone': '+25761186688'},
+        {'name': 'CANKUZO', 'phone': '+25762183760'},
+        {'name': 'AGENCE MATANA', 'phone': '+25767269307'},
+        {'name': 'AGENCE RUGOMBO', 'phone': '+25761508088 '},
+        {'name': 'AGENCE CIBITOKE E-HOME', 'phone': '+25767676373'},
+        {'name': 'AGENCE BUKEYE', 'phone': '+25771988517'},
+        {'name': 'AGENCE NGOZI I', 'phone': '+25768596164 '},
+        {'name': 'AGENCE MASANGANZIRA', 'phone': '+25761140429'},
+        {'name': 'AGENCE MAKAMBA', 'phone': '+25762387745'},
+        {'name': 'AGENCE NYANZA LAC', 'phone': '+25762692223'},
+        {'name': 'AGENCE MUSENYI', 'phone': '+25779918552'},
+        {'name': 'AGENCE BUBANZA', 'phone': '+25779999811'},
+        {'name': 'AGENCE KINAMA A', 'phone': '+25779999811'},
+        {'name': 'GUICHER MARCHER KINAMA', 'phone': '+25779918735'},
+        {'name': 'GUICHET MAIRIE', 'phone': '+25779746410'},
+        {'name': 'GUICHET COTEBU E-HOME', 'phone': '+25768026070'}
     ]
     return render_template('client/branches.html', branches=branches_list)
 
@@ -481,20 +576,34 @@ def branches():
 @login_required
 def chat():
     if request.method == 'POST':
-        content = request.form.get('message')
-        new_message = Message(
-            content=content,
-            user_id=current_user.id,
-            admin_id=None,
-            is_admin=False
-        )
-        db.session.add(new_message)
+        action = request.form.get('action')
+        
+        if action == 'send':
+            content = request.form.get('message')
+            new_message = Message(
+                content=content,
+                user_id=current_user.id,
+                admin_id=None,
+                is_admin=False
+            )
+            db.session.add(new_message)
+        elif action == 'delete':
+            message_id = request.form.get('message_id')
+            message = Message.query.get(message_id)
+            if message and message.user_id == current_user.id:
+                db.session.delete(message)
+        
         db.session.commit()
     
     messages = Message.query.filter(
         (Message.user_id == current_user.id) |
         (Message.admin_id == current_user.id)
     ).order_by(Message.created_at).all()
+    
+    # Mark admin messages as read
+    Message.query.filter_by(user_id=current_user.id, is_read=False, is_admin=True).update({'is_read': True})
+    db.session.commit()
+    
     return render_template('client/chat.html', messages=messages)
 
 @app.route('/admin/chat', methods=['GET', 'POST'])
@@ -511,25 +620,90 @@ def admin_chat():
         selected_user = User.query.get(user_id)
         
         if request.method == 'POST':
-            content = request.form.get('message')
-            new_message = Message(
-                content=content,
-                user_id=user_id,
-                admin_id=current_user.id,
-                is_admin=True
-            )
-            db.session.add(new_message)
+            action = request.form.get('action')
+            
+            if action == 'send':
+                content = request.form.get('message')
+                new_message = Message(
+                    content=content,
+                    user_id=user_id,
+                    admin_id=current_user.id,
+                    is_admin=True
+                )
+                db.session.add(new_message)
+            elif action == 'delete':
+                message_id = request.form.get('message_id')
+                message = Message.query.get(message_id)
+                if message and (message.admin_id == current_user.id or message.user_id == user_id):
+                    db.session.delete(message)
+            
             db.session.commit()
         
         messages = Message.query.filter(
             (Message.user_id == user_id) |
             ((Message.admin_id == current_user.id) & (Message.user_id == user_id))
         ).order_by(Message.created_at).all()
+        
+        # Mark client messages as read
+        Message.query.filter_by(user_id=user_id, admin_id=current_user.id, is_read=False, is_admin=False).update({'is_read': True})
+        db.session.commit()
+    
+    # Get unread counts for all clients
+    unread_counts = {}
+    for client in clients:
+        unread = Message.query.filter_by(
+            user_id=client.id,
+            is_admin=False,
+            is_read=False
+        ).count()
+        unread_counts[client.id] = unread
     
     return render_template('admin/chat.html', 
                          clients=clients,
                          user=selected_user,
-                         messages=messages)
+                         messages=messages,
+                         unread_counts=unread_counts)
+
+@app.route('/message/copy', methods=['POST'])
+@login_required
+def copy_message():
+    message_id = request.form.get('message_id')
+    message = Message.query.get(message_id)
+    
+    if message and (message.user_id == current_user.id or message.admin_id == current_user.id):
+        return jsonify({'content': message.content})
+    
+    return jsonify({'error': 'Message not found'}), 404
+
+@app.route('/message/resend', methods=['POST'])
+@login_required
+def resend_message():
+    message_id = request.form.get('message_id')
+    message = Message.query.get(message_id)
+    
+    if message:
+        if message.user_id == current_user.id:  # Client resending
+            new_message = Message(
+                content=message.content,
+                user_id=current_user.id,
+                admin_id=None,
+                is_admin=False
+            )
+        elif message.admin_id == current_user.id:  # Admin resending
+            new_message = Message(
+                content=message.content,
+                user_id=message.user_id,
+                admin_id=current_user.id,
+                is_admin=True
+            )
+        else:
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        db.session.add(new_message)
+        db.session.commit()
+        return jsonify({'success': True})
+    
+    return jsonify({'error': 'Message not found'}), 404
 
 @app.route('/delete/auto/<int:id>')
 @login_required
@@ -586,23 +760,38 @@ def download_auto_request(id):
     if request_auto.user_id != current_user.id:
         abort(403)
     
-    # Get absolute paths to images
-    carte_rose_path = os.path.join(app.config['UPLOADED_IMAGES_DEST'], request_auto.carte_rose) if request_auto.carte_rose else None
-    ancient_card_path = os.path.join(app.config['UPLOADED_IMAGES_DEST'], request_auto.ancient_card) if request_auto.ancient_card else None
+    # Prepare image data
+    image_data = {
+        'carte_rose': None,
+        'ancient_card': None
+    }
     
-    # Convert images to data URIs if they exist
-    def image_to_data_uri(image_path):
-        if image_path and os.path.exists(image_path):
-            with open(image_path, "rb") as image_file:
-                encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                return f"data:image/{image_path.split('.')[-1]};base64,{encoded_string}"
+    # Helper function to get image data
+    def get_image_data(filename):
+        if not filename:
+            return None
+        try:
+            image_path = os.path.join(app.config['UPLOADED_IMAGES_DEST'], filename)
+            if os.path.exists(image_path):
+                with open(image_path, 'rb') as f:
+                    return base64.b64encode(f.read()).decode('utf-8')
+        except Exception as e:
+            current_app.logger.error(f"Error processing image {filename}: {e}")
         return None
     
-    html = render_template('client/pdf_auto_request.html', 
-                         request=request_auto,
-                         carte_rose_uri=image_to_data_uri(carte_rose_path),
-                         ancient_card_uri=image_to_data_uri(ancient_card_path))
+    # Get image data
+    image_data['carte_rose'] = get_image_data(request_auto.carte_rose)
+    image_data['ancient_card'] = get_image_data(request_auto.ancient_card)
     
+    # Render HTML with image data
+    html = render_template(
+        'client/pdf_auto_request.html', 
+        request=request_auto,
+        now=datetime.now(),
+        images=image_data
+    )
+    
+    # Create PDF
     pdf = BytesIO()
     pisa.CreatePDF(html, dest=pdf)
     pdf.seek(0)
@@ -699,7 +888,6 @@ def manage_requests():
                          status=status,
                          search=search)
 
-
 @app.route('/admin/manage-users')
 @login_required
 @admin_required
@@ -768,53 +956,6 @@ def reject_request(type, id):
     flash(f'The {type} request has been rejected!', 'success')
     return redirect(url_for('manage_requests'))
 
-# Utility functions
-def send_confirmation_email(to, subject_suffix):
-    msg = Message(
-        subject=f'BIC Client Care - {subject_suffix} Received',
-        recipients=[to],
-        sender=app.config['MAIL_DEFAULT_SENDER']
-    )
-    msg.body = f'''
-    Thank you for your {subject_suffix.lower()}.
-    
-    We have received your submission and will process it shortly.
-    You can check the status in your BIC Client Care dashboard.
-    
-    Best regards,
-    BIC Client Care Team
-    '''
-    mail.send(msg)
-
-def send_status_email(to, request_type, status):
-    msg = Message(
-        subject=f'BIC Client Care - {request_type.capitalize()} {status.capitalize()}',
-        recipients=[to],
-        sender=app.config['MAIL_DEFAULT_SENDER']
-    )
-    msg.body = f'''
-    Your {request_type} has been {status}.
-    
-    You can view the details in your BIC Client Care dashboard.
-    
-    Best regards,
-    BIC Client Care Team
-    '''
-    mail.send(msg)
-
-# Error handlers
-@app.errorhandler(403)
-def forbidden(error):
-    return render_template('errors/403.html'), 403
-
-@app.errorhandler(404)
-def page_not_found(error):
-    return render_template('errors/404.html'), 404
-
-@app.errorhandler(500)
-def internal_server_error(error):
-    return render_template('errors/500.html'), 500
-
 @app.route('/download/travel/<int:id>')
 @login_required
 def download_travel_request(id):
@@ -858,7 +999,6 @@ def download_travel_request(id):
         download_name=f"travel_insurance_request_{request_travel.id}.pdf",
         mimetype='application/pdf'
     )
-
 
 @app.route('/download/comesa/<int:id>')
 @login_required
@@ -910,6 +1050,95 @@ def download_comesa_request(id):
         mimetype='application/pdf'
     )
 
+@app.route('/admin/download/<string:type>/<int:id>')
+@login_required
+@admin_required
+def download_request(type, id):
+    # Helper function to get base64 encoded image data
+    def get_image_data(filename):
+        if not filename:
+            current_app.logger.debug(f"No image filename provided")
+            return None
+        try:
+            image_path = os.path.join(current_app.config['UPLOADED_IMAGES_DEST'], filename)
+            current_app.logger.debug(f"Looking for image at: {image_path}")
+            if os.path.exists(image_path):
+                with open(image_path, "rb") as image_file:
+                    return base64.b64encode(image_file.read()).decode('utf-8')
+            else:
+                current_app.logger.debug(f"Image file not found at: {image_path}")
+        except Exception as e:
+            current_app.logger.error(f"Error processing image {filename}: {e}")
+        return None
+
+    if type == 'auto':
+        request = AutoInsuranceRequest.query.get_or_404(id)
+        filename = f"auto_insurance_{id}.pdf"
+        template = 'admin/pdf_auto_request.html'
+        data = {
+            'request': request,
+            'now': datetime.now(),
+            'images': {
+                'carte_rose': get_image_data(request.carte_rose),
+                'ancient_card': get_image_data(request.ancient_card)
+            }
+        }
+    elif type == 'comesa':
+        request = ComesaInsuranceRequest.query.get_or_404(id)
+        filename = f"comesa_insurance_{id}.pdf"
+        template = 'admin/pdf_comesa_request.html'
+        data = {
+            'request': request,
+            'now': datetime.now(),
+            'images': {
+                'carte_rose': get_image_data(request.carte_rose),
+                'ancient_card': get_image_data(request.ancient_card)
+            }
+        }
+    elif type == 'travel':
+        request = TravelInsuranceRequest.query.get_or_404(id)
+        filename = f"travel_insurance_{id}.pdf"
+        template = 'admin/pdf_travel_request.html'
+        data = {
+            'request': request,
+            'now': datetime.now(),
+            'images': {
+                'passport': get_image_data(request.passport)
+            }
+        }
+    elif type == 'accident':
+        request = AccidentDeclaration.query.get_or_404(id)
+        filename = f"accident_declaration_{id}.pdf"
+        template = 'admin/pdf_accident_declaration.html'
+        data = {
+            'declaration': request,
+            'now': datetime.now(),
+            'images': {
+                'accident_image1': get_image_data(request.accident_image1),
+                'accident_image2': get_image_data(request.accident_image2),
+                'accident_image3': get_image_data(request.accident_image3),
+                'carte_rose_image': get_image_data(request.carte_rose_image),
+                'insurance_card_image': get_image_data(request.insurance_card_image),
+                'driving_license_image': get_image_data(request.driving_license_image)
+            }
+        }
+    else:
+        abort(404)
+    
+    # Render the appropriate admin template with the data
+    html = render_template(template, **data)
+    
+    # Generate PDF
+    pdf = BytesIO()
+    pisa.CreatePDF(html, dest=pdf)
+    pdf.seek(0)
+    
+    return send_file(
+        pdf,
+        as_attachment=True,
+        download_name=filename,
+        mimetype='application/pdf'
+    )
 
 @app.route('/download/accident/<int:id>')
 @login_required
@@ -961,138 +1190,25 @@ def download_accident_declaration(id):
         as_attachment=True,
         download_name=f"accident_declaration_{declaration.id}.pdf",
         mimetype='application/pdf'
-    ) 
-
-
-@app.route('/admin/download/<string:type>/<int:id>')
-@login_required
-@admin_required
-def download_request(type, id):
-    if type == 'auto':
-        request = AutoInsuranceRequest.query.get_or_404(id)
-        filename = f"auto_insurance_{id}.pdf"
-        data = {
-            'Type': 'Auto Insurance',
-            'Client': f"{request.user.first_name} {request.user.last_name}",
-            'Phone': request.phone,
-            'Car Make': request.car_make,
-            'Car Model': request.car_model,
-            'Year': request.year,
-            'VIN': request.vin,
-            'Status': request.status,
-            'Date': request.created_at.strftime('%Y-%m-%d')
-        }
-    elif type == 'travel':
-        request = TravelInsuranceRequest.query.get_or_404(id)
-        filename = f"travel_insurance_{id}.pdf"
-        data = {
-            'Type': 'Travel Insurance',
-            'Client': f"{request.user.first_name} {request.user.last_name}",
-            'Destination': request.destination,
-            'Departure Date': request.departure_date.strftime('%Y-%m-%d'),
-            'Return Date': request.return_date.strftime('%Y-%m-%d'),
-            'Days': request.days,
-            'Travelers': request.travelers,
-            'Status': request.status,
-            'Date': request.created_at.strftime('%Y-%m-%d')
-        }
-    elif type == 'comesa':
-        request = ComesaInsuranceRequest.query.get_or_404(id)
-        filename = f"comesa_insurance_{id}.pdf"
-        data = {
-            'Type': 'COMESA Insurance',
-            'Client': f"{request.user.first_name} {request.user.last_name}",
-            'Phone': request.phone,
-            'Company': request.company,
-            'TIN': request.tin,
-            'Vehicle Details': request.vehicle_details,
-            'Status': request.status,
-            'Date': request.created_at.strftime('%Y-%m-%d')
-        }
-    elif type == 'accident':
-        request = AccidentDeclaration.query.get_or_404(id)
-        filename = f"accident_declaration_{id}.pdf"
-        data = {
-            'Type': 'Accident Declaration',
-            'Client': f"{request.user.first_name} {request.user.last_name}",
-            'Accident Date': request.accident_date.strftime('%Y-%m-%d'),
-            'Car Type': request.car_type,
-            'Plate License': request.plate_license,
-            'Location': request.location,
-            'Description': request.description,
-            'Status': request.status,
-            'Date': request.created_at.strftime('%Y-%m-%d')
-        }
-    else:
-        abort(404)
-    
-    # Generate PDF
-    pdf = generate_pdf(data)
-    
-    return Response(
-        pdf,
-        mimetype="application/pdf",
-        headers={"Content-Disposition": f"attachment;filename={filename}"}
     )
 
-def generate_pdf(data):
-    # Create a PDF using reportlab or other library
-    # This is a simplified version - you'll need to implement properly
-    from io import BytesIO
-    from reportlab.pdfgen import canvas
-    
-    buffer = BytesIO()
-    p = canvas.Canvas(buffer)
-    
-    y = 800
-    p.drawString(100, y, "BIC Client Care - Request Details")
-    y -= 30
-    
-    for key, value in data.items():
-        p.drawString(100, y, f"{key}: {value}")
-        y -= 20
-    
-    p.showPage()
-    p.save()
-    
-    buffer.seek(0)
-    return buffer.getvalue()
+# Error handlers
+@app.errorhandler(403)
+def forbidden(error):
+    return render_template('errors/403.html'), 403
 
-# Utility functions
-def send_confirmation_email(to, subject_suffix):
-    msg = MailMessage(
-        subject=f'BIC Client Care - {subject_suffix} Received',
-        recipients=[to],
-        sender=app.config['MAIL_DEFAULT_SENDER']
-    )
-    msg.body = f'''
-    Thank you for your {subject_suffix.lower()}.
-    
-    We have received your submission and will process it shortly.
-    You can check the status in your BIC Client Care dashboard.
-    
-    Best regards,
-    BIC Client Care Team
-    '''
-    mail.send(msg)
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('errors/404.html'), 404
 
-def send_status_email(to, request_type, status):
-    msg = MailMessage(
-        subject=f'BIC Client Care - {request_type.capitalize()} {status.capitalize()}',
-        recipients=[to],
-        sender=app.config['MAIL_DEFAULT_SENDER']
-    )
-    msg.body = f'''
-    Your {request_type} has been {status}.
-    
-    You can view the details in your BIC Client Care dashboard.
-    
-    Best regards,
-    BIC Client Care Team
-    '''
-    mail.send(msg)
+@app.errorhandler(500)
+def internal_server_error(error):
+    return render_template('errors/500.html'), 500
 
-
+# Context processors
+@app.context_processor
+def inject_now():
+    return {'now': datetime.now()}
 
 if __name__ == '__main__':
     app.run(debug=True)

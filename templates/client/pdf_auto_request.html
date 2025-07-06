@@ -1,151 +1,158 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto Insurance Request - {{ request.user.first_name }} {{ request.user.last_name }}</title>
+    <title>Auto Insurance Request #{{ request.id }}</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            margin: 0;
-            padding: 20px;
+        body { 
+            font-family: Arial, sans-serif; 
+            line-height: 1.6; 
+            margin: 20px;
         }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #0066cc;
-            padding-bottom: 10px;
+        .header { 
+            text-align: center; 
+            margin-bottom: 20px; 
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 15px;
         }
-        .header h1 {
-            color: #0066cc;
-            margin-bottom: 5px;
-        }
-        .info-section {
-            margin-bottom: 20px;
-        }
-        .info-section h2 {
-            color: #0066cc;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 5px;
-            font-size: 18px;
-        }
-        .info-row {
-            display: flex;
+        .logo { 
+            height: 80px; 
             margin-bottom: 10px;
         }
-        .info-label {
+        h1 { 
+            color: #2c3e50; 
+            margin: 5px 0;
+        }
+        h2 {
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .user-info, .request-details { 
+            margin-bottom: 30px; 
+        }
+        .footer { 
+            margin-top: 50px; 
+            font-size: 0.8em; 
+            text-align: center;
+            color: #777;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 20px; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            text-align: left; 
+        }
+        th { 
+            background-color: #f2f2f2; 
             font-weight: bold;
-            width: 200px;
+        }
+        .document-image { 
+            max-width: 100%; 
+            max-height: 300px;
+            height: auto; 
+            margin-top: 10px; 
+            border: 1px solid #ddd;
+            display: block;
+        }
+        .document-container { 
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+        .document-title {
+            font-weight: bold;
+            margin-bottom: 5px;
         }
         .status {
-            display: inline-block;
             padding: 5px 10px;
-            border-radius: 4px;
+            border-radius: 3px;
             font-weight: bold;
-            text-transform: uppercase;
-            font-size: 12px;
         }
         .status-pending {
-            background-color: #fff3cd;
+            background-color: #FFF3CD;
             color: #856404;
         }
         .status-approved {
-            background-color: #d4edda;
+            background-color: #D4EDDA;
             color: #155724;
         }
         .status-rejected {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        .footer {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 12px;
-            color: #777;
-            border-top: 1px solid #ddd;
-            padding-top: 10px;
-        }
-        .document-image {
-            max-width: 300px;
-            max-height: 200px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            padding: 5px;
-        }
-        .document-section {
-            margin-top: 20px;
+            background-color: #F8D7DA;
+            color: #721C24;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Automobile Insurance Request</h1>
-        <p>Generated on: {{ datetime.now().strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        <h1>AUTOMOBILE INSURANCE REQUEST</h1>
+        <p>Request #{{ request.id }}</p>
+        <p>Generated on {{ now.strftime('%Y-%m-%d %H:%M') }}</p>
     </div>
-
-    <div class="info-section">
+    
+    <div class="user-info">
         <h2>Client Information</h2>
-        <div class="info-row">
-            <div class="info-label">Client Name:</div>
-            <div>{{ request.user.first_name }} {{ request.user.last_name }}</div>
-        </div>
-        <div class="info-row">
-            <div class="info-label">Email:</div>
-            <div>{{ request.user.email }}</div>
-        </div>
-        <div class="info-row">
-            <div class="info-label">Phone:</div>
-            <div>{{ request.phone }}</div>
-        </div>
+        <table>
+            <tr>
+                <th width="30%">Full Name</th>
+                <td>{{ request.user.first_name }} {{ request.user.last_name }}</td>
+            </tr>
+            <tr>
+                <th>Email</th>
+                <td>{{ request.user.email }}</td>
+            </tr>
+            <tr>
+                <th>Phone Number</th>
+                <td>{{ request.phone }}</td>
+            </tr>
+        </table>
     </div>
-
-    <div class="info-section">
+    
+    <div class="request-details">
         <h2>Request Details</h2>
-        <div class="info-row">
-            <div class="info-label">Request ID:</div>
-            <div>{{ request.id }}</div>
+        <table>
+            <tr>
+                <th width="30%">Request Date</th>
+                <td>{{ request.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            </tr>
+            <tr>
+                <th>Status</th>
+                <td>
+                    <span class="status status-{{ request.status }}">
+                        {{ request.status|upper }}
+                    </span>
+                </td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="documents">
+        <h2>Attached Documents</h2>
+        
+        <div class="document-container">
+            <div class="document-title">Carte Rose</div>
+            {% if images.carte_rose %}
+                <img class="document-image" src="data:image/jpeg;base64,{{ images.carte_rose }}" alt="Carte Rose">
+            {% else %}
+                <p style="color: #777;">No Carte Rose image provided</p>
+            {% endif %}
         </div>
-        <div class="info-row">
-            <div class="info-label">Submission Date:</div>
-            <div>{{ request.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
-        </div>
-        <div class="info-row">
-            <div class="info-label">Status:</div>
-            <div>
-                <span class="status status-{{ request.status }}">{{ request.status }}</span>
-            </div>
+        
+        <div class="document-container">
+            <div class="document-title">Ancient Card</div>
+            {% if images.ancient_card %}
+                <img class="document-image" src="data:image/jpeg;base64,{{ images.ancient_card }}" alt="Ancient Card">
+            {% else %}
+                <p style="color: #777;">No Ancient Card image provided</p>
+            {% endif %}
         </div>
     </div>
-
-    <div class="info-section document-section">
-        <h2>Documents</h2>
-        <div class="info-row">
-            <div class="info-label">Carte Rose:</div>
-            <div>
-                {% if carte_rose_uri %}
-                    <img src="{{ carte_rose_uri }}" class="document-image" alt="Carte Rose">
-                {% else %}
-                    Not provided
-                {% endif %}
-            </div>
-        </div>
-        <div class="info-row">
-            <div class="info-label">Previous Insurance Card:</div>
-            <div>
-                {% if ancient_card_uri %}
-                    <img src="{{ ancient_card_uri }}" class="document-image" alt="Previous Insurance Card">
-                {% else %}
-                    Not provided
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
+    
     <div class="footer">
-        <p>This document was automatically generated by BIC Client Care System</p>
-        <p>&copy; {{ datetime.now().year }} BIC - All rights reserved</p>
+        <p>BIC Client Care System - {{ now.strftime('%Y') }}</p>
     </div>
 </body>
 </html>

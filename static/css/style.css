@@ -177,3 +177,35 @@ body {
 .message-sender {
     font-weight: bold;
 }
+
+
+/* Message actions styling */
+.message-actions {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.chat-message:hover .message-actions {
+    opacity: 1;
+}
+
+.dropdown-toggle::after {
+    display: none;
+}
+
+.message-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    margin-top: 4px;
+    color: #6c757d;
+}
+
+.message-sender {
+    font-weight: bold;
+}
+
+.message-time {
+    margin-left: auto;
+}

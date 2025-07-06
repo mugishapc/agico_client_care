@@ -6,13 +6,23 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Chat With Customer Service</h4>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Chat With Customer Service</h4>
+                    <span class="badge bg-light text-dark">
+                        {% set unread = messages|selectattr('is_admin', 'equalto', true)|selectattr('is_read', 'equalto', false)|list|length %}
+                        {% if unread > 0 %}
+                            {{ unread }} new message{% if unread > 1 %}s{% endif %}
+                        {% else %}
+                            {{ messages|length }} message{% if messages|length != 1 %}s{% endif %}
+                        {% endif %}
+                    </span>
+                </div>
             </div>
             <div class="card-body">
                 <div class="chat-container" id="chatContainer">
                     {% if messages %}
                         {% for message in messages %}
-                            <div class="chat-message {% if message.is_admin %}admin-message{% else %}user-message{% endif %}">
+                            <div class="chat-message {% if message.is_admin %}admin-message{% else %}user-message{% endif %}" id="message-{{ message.id }}">
                                 <div class="message-content">{{ message.content }}</div>
                                 <div class="message-meta">
                                     <span class="message-sender">
@@ -25,6 +35,19 @@
                                     <span class="message-time">
                                         {{ message.created_at.strftime('%Y-%m-%d %H:%M') }}
                                     </span>
+                                    <span class="message-actions">
+                                        <button class="btn btn-sm btn-link p-0 ms-2 copy-btn" data-message-id="{{ message.id }}" title="Copy">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                        {% if not message.is_admin %}
+                                            <button class="btn btn-sm btn-link p-0 ms-1 resend-btn" data-message-id="{{ message.id }}" title="Resend">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-link p-0 ms-1 delete-btn" data-message-id="{{ message.id }}" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        {% endif %}
+                                    </span>
                                 </div>
                             </div>
                         {% endfor %}
@@ -36,6 +59,7 @@
                 </div>
                 
                 <form id="chatForm" method="POST" action="{{ url_for('chat') }}">
+                    <input type="hidden" name="action" value="send">
                     <div class="input-group mb-3">
                         <input type="text" class="form-control" name="message" 
                                placeholder="Type your message..." required>
@@ -55,23 +79,111 @@
     const chatContainer = document.getElementById('chatContainer');
     chatContainer.scrollTop = chatContainer.scrollHeight;
     
-    // Optional: Add AJAX for better user experience
-    document.getElementById('chatForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const form = this;
-        const formData = new FormData(form);
-        
-        fetch(form.action, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (response.ok) {
-                window.location.reload();
-            }
-        })
-        .catch(error => console.error('Error:', error));
+    // Handle message actions
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const messageId = this.getAttribute('data-message-id');
+            fetch('/message/copy', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `message_id=${messageId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.content) {
+                    navigator.clipboard.writeText(data.content);
+                    const tooltip = new bootstrap.Tooltip(this, {
+                        title: 'Copied!',
+                        trigger: 'manual'
+                    });
+                    tooltip.show();
+                    setTimeout(() => tooltip.hide(), 1000);
+                }
+            });
+        });
     });
+    
+    document.querySelectorAll('.resend-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const messageId = this.getAttribute('data-message-id');
+            fetch('/message/resend', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `message_id=${messageId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                }
+            });
+        });
+    });
+    
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to delete this message?')) {
+                const messageId = this.getAttribute('data-message-id');
+                const formData = new FormData();
+                formData.append('action', 'delete');
+                formData.append('message_id', messageId);
+                
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        document.getElementById(`message-${messageId}`).remove();
+                    }
+                });
+            }
+        });
+    });
+    
+    // Real-time updates with Server-Sent Events or polling
+    function checkForNewMessages() {
+        fetch(window.location.href)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newMessages = doc.querySelectorAll('.chat-message');
+                const currentMessages = document.querySelectorAll('.chat-message');
+                
+                if (newMessages.length > currentMessages.length) {
+                    // Play notification sound
+                    const audio = new Audio('/static/notification.mp3');
+                    audio.play().catch(e => console.log('Audio play failed:', e));
+                    
+                    // Show desktop notification if permitted
+                    if (Notification.permission === 'granted') {
+                        new Notification('New message', {
+                            body: 'You have a new message from support',
+                            icon: '/static/favicon.ico'
+                        });
+                    } else if (Notification.permission !== 'denied') {
+                        Notification.requestPermission().then(permission => {
+                            if (permission === 'granted') {
+                                new Notification('New message', {
+                                    body: 'You have a new message from support',
+                                    icon: '/static/favicon.ico'
+                                });
+                            }
+                        });
+                    }
+                    
+                    location.reload();
+                }
+            });
+    }
+    
+    // Check for new messages every 10 seconds
+    setInterval(checkForNewMessages, 10000);
 </script>
 {% endblock %}
 {% endblock %}
