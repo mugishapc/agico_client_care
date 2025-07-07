@@ -209,3 +209,11 @@ body {
 .message-time {
     margin-left: auto;
 }
+.client-models table {
+    margin-bottom: 15px;
+}
+
+.client-models h3 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}

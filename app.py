@@ -1141,20 +1141,31 @@ def download_request(type, id):
             }
         }
     elif type == 'accident':
-        request = AccidentDeclaration.query.get_or_404(id)
-        filename = f"accident_declaration_{id}.pdf"
+        declaration = AccidentDeclaration.query.get_or_404(id)
+        user = declaration.user
+        
+        # Get all related requests for this user
+        auto_requests = AutoInsuranceRequest.query.filter_by(user_id=user.id).all()
+        travel_requests = TravelInsuranceRequest.query.filter_by(user_id=user.id).all()
+        comesa_requests = ComesaInsuranceRequest.query.filter_by(user_id=user.id).all()
+        
+        filename = f"accident_declaration_{id}_with_client_models.pdf"
         template = 'admin/pdf_accident_declaration.html'
         data = {
-            'declaration': request,
+            'declaration': declaration,
             'now': datetime.now(),
             'current_user': current_user,
+            'user': user,
+            'auto_requests': auto_requests,
+            'travel_requests': travel_requests,
+            'comesa_requests': comesa_requests,
             'images': {
-                'accident_image1': get_image_data(request.accident_image1),
-                'accident_image2': get_image_data(request.accident_image2),
-                'accident_image3': get_image_data(request.accident_image3),
-                'carte_rose_image': get_image_data(request.carte_rose_image),
-                'insurance_card_image': get_image_data(request.insurance_card_image),
-                'driving_license_image': get_image_data(request.driving_license_image)
+                'accident_image1': get_image_data(declaration.accident_image1),
+                'accident_image2': get_image_data(declaration.accident_image2),
+                'accident_image3': get_image_data(declaration.accident_image3),
+                'carte_rose_image': get_image_data(declaration.carte_rose_image),
+                'insurance_card_image': get_image_data(declaration.insurance_card_image),
+                'driving_license_image': get_image_data(declaration.driving_license_image)
             }
         }
     else:
