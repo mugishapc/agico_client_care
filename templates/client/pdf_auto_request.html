@@ -135,7 +135,7 @@
         <div class="document-container">
             <div class="document-title">Carte Rose</div>
             {% if images.carte_rose %}
-                <img class="document-image" src="data:image/jpeg;base64,{{ images.carte_rose }}" alt="Carte Rose">
+                <img class="document-image" src="{{ images.carte_rose }}" alt="Carte Rose">
             {% else %}
                 <p style="color: #777;">No Carte Rose image provided</p>
             {% endif %}
@@ -144,7 +144,7 @@
         <div class="document-container">
             <div class="document-title">Ancient Card</div>
             {% if images.ancient_card %}
-                <img class="document-image" src="data:image/jpeg;base64,{{ images.ancient_card }}" alt="Ancient Card">
+                <img class="document-image" src="{{ images.ancient_card }}" alt="Ancient Card">
             {% else %}
                 <p style="color: #777;">No Ancient Card image provided</p>
             {% endif %}

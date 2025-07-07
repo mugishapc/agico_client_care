@@ -753,7 +753,7 @@ def delete_accident_declaration(id):
     flash('Your accident declaration has been deleted!', 'success')
     return redirect(url_for('dashboard'))
 
-@app.route('/download/auto/<int:id>')
+@app.route('/download/auto/<int:id>') 
 @login_required
 def download_auto_request(id):
     request_auto = AutoInsuranceRequest.query.get_or_404(id)
@@ -771,10 +771,14 @@ def download_auto_request(id):
         if not filename:
             return None
         try:
-            image_path = os.path.join(app.config['UPLOADED_IMAGES_DEST'], filename)
+            image_path = os.path.join('static/uploads/images', filename)
             if os.path.exists(image_path):
                 with open(image_path, 'rb') as f:
-                    return base64.b64encode(f.read()).decode('utf-8')
+                    encoded_string = base64.b64encode(f.read()).decode('utf-8')
+                    ext = os.path.splitext(filename)[1].lower().replace('.', '')
+                    if ext == 'jpg':
+                        ext = 'jpeg'
+                    return f"data:image/{ext};base64,{encoded_string}"
         except Exception as e:
             current_app.logger.error(f"Error processing image {filename}: {e}")
         return None
@@ -789,6 +793,18 @@ def download_auto_request(id):
         request=request_auto,
         now=datetime.now(),
         images=image_data
+    )
+    
+    # Create PDF
+    pdf = BytesIO()
+    pisa.CreatePDF(html, dest=pdf)
+    pdf.seek(0)
+    
+    return send_file(
+        pdf,
+        as_attachment=True,
+        download_name=f"auto_insurance_request_{request_auto.id}.pdf",
+        mimetype='application/pdf'
     )
     
     # Create PDF
@@ -963,32 +979,40 @@ def download_travel_request(id):
     if request_travel.user_id != current_user.id:
         abort(403)
     
-    # Get absolute path to passport image
-    passport_path = None
-    if request_travel.passport:  # Check if passport field has a value
-        # Construct the full path to the uploaded image
-        upload_folder = current_app.config['UPLOADED_IMAGES_DEST']
-        passport_path = os.path.join(upload_folder, request_travel.passport)
+    # Prepare image data
+    image_data = {
+        'passport': None
+    }
     
-    # Convert image to data URI if it exists
-    def image_to_data_uri(image_path):
-        if image_path and os.path.exists(image_path):
-            with open(image_path, "rb") as image_file:
-                encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                # Get file extension for proper MIME type
-                ext = os.path.splitext(image_path)[1].lower().replace('.', '')
-                if ext == 'jpg':
-                    ext = 'jpeg'  # Correct MIME type for JPEG
-                return f"data:image/{ext};base64,{encoded_string}"
+    # Helper function to get image data
+    def get_image_data(filename):
+        if not filename:
+            return None
+        try:
+            image_path = os.path.join('static/uploads/images', filename)
+            if os.path.exists(image_path):
+                with open(image_path, 'rb') as f:
+                    encoded_string = base64.b64encode(f.read()).decode('utf-8')
+                    ext = os.path.splitext(filename)[1].lower().replace('.', '')
+                    if ext == 'jpg':
+                        ext = 'jpeg'
+                    return f"data:image/{ext};base64,{encoded_string}"
+        except Exception as e:
+            current_app.logger.error(f"Error processing image {filename}: {e}")
         return None
     
-    passport_uri = image_to_data_uri(passport_path)
+    # Get image data
+    image_data['passport'] = get_image_data(request_travel.passport)
     
-    html = render_template('client/pdf_travel_request.html', 
-                         request=request_travel,
-                         now=datetime.now(),
-                         passport_uri=passport_uri)
+    # Render HTML with image data
+    html = render_template(
+        'client/pdf_travel_request.html', 
+        request=request_travel,
+        now=datetime.now(),
+        images=image_data
+    )
     
+    # Create PDF
     pdf = BytesIO()
     pisa.CreatePDF(html, dest=pdf)
     pdf.seek(0)
@@ -1000,7 +1024,7 @@ def download_travel_request(id):
         mimetype='application/pdf'
     )
 
-@app.route('/download/comesa/<int:id>')
+@app.route('/download/comesa/<int:id>') 
 @login_required
 def download_comesa_request(id):
     request_comesa = ComesaInsuranceRequest.query.get_or_404(id)
@@ -1018,10 +1042,14 @@ def download_comesa_request(id):
         if not filename:
             return None
         try:
-            image_path = os.path.join(app.config['UPLOADED_IMAGES_DEST'], filename)
+            image_path = os.path.join('static/uploads/images', filename)
             if os.path.exists(image_path):
                 with open(image_path, 'rb') as f:
-                    return base64.b64encode(f.read()).decode('utf-8')
+                    encoded_string = base64.b64encode(f.read()).decode('utf-8')
+                    ext = os.path.splitext(filename)[1].lower().replace('.', '')
+                    if ext == 'jpg':
+                        ext = 'jpeg'
+                    return f"data:image/{ext};base64,{encoded_string}"
         except Exception as e:
             current_app.logger.error(f"Error processing image {filename}: {e}")
         return None
@@ -1057,19 +1085,22 @@ def download_request(type, id):
     # Helper function to get base64 encoded image data
     def get_image_data(filename):
         if not filename:
-            current_app.logger.debug(f"No image filename provided")
+            current_app.logger.debug("No image filename provided")
             return None
         try:
-            image_path = os.path.join(current_app.config['UPLOADED_IMAGES_DEST'], filename)
+            # Construct the full path to the image in static/uploads/images
+            image_path = os.path.join(current_app.root_path, 'static', 'uploads', 'images', filename)
             current_app.logger.debug(f"Looking for image at: {image_path}")
+            
             if os.path.exists(image_path):
                 with open(image_path, "rb") as image_file:
                     return base64.b64encode(image_file.read()).decode('utf-8')
             else:
-                current_app.logger.debug(f"Image file not found at: {image_path}")
+                current_app.logger.error(f"Image file not found at: {image_path}")
+                return None
         except Exception as e:
-            current_app.logger.error(f"Error processing image {filename}: {e}")
-        return None
+            current_app.logger.error(f"Error processing image {filename}: {str(e)}")
+            return None
 
     if type == 'auto':
         request = AutoInsuranceRequest.query.get_or_404(id)
@@ -1078,6 +1109,7 @@ def download_request(type, id):
         data = {
             'request': request,
             'now': datetime.now(),
+            'current_user': current_user,
             'images': {
                 'carte_rose': get_image_data(request.carte_rose),
                 'ancient_card': get_image_data(request.ancient_card)
@@ -1090,6 +1122,7 @@ def download_request(type, id):
         data = {
             'request': request,
             'now': datetime.now(),
+            'current_user': current_user,
             'images': {
                 'carte_rose': get_image_data(request.carte_rose),
                 'ancient_card': get_image_data(request.ancient_card)
@@ -1102,6 +1135,7 @@ def download_request(type, id):
         data = {
             'request': request,
             'now': datetime.now(),
+            'current_user': current_user,
             'images': {
                 'passport': get_image_data(request.passport)
             }
@@ -1113,6 +1147,7 @@ def download_request(type, id):
         data = {
             'declaration': request,
             'now': datetime.now(),
+            'current_user': current_user,
             'images': {
                 'accident_image1': get_image_data(request.accident_image1),
                 'accident_image2': get_image_data(request.accident_image2),
@@ -1158,7 +1193,7 @@ def download_accident_declaration(id):
         filename = getattr(declaration, field)
         if filename:
             try:
-                image_path = os.path.join(app.config['UPLOADED_IMAGES_DEST'], filename)
+                image_path = os.path.join('static/uploads/images', filename)
                 if os.path.exists(image_path):
                     with open(image_path, 'rb') as f:
                         encoded_string = base64.b64encode(f.read()).decode('utf-8')
