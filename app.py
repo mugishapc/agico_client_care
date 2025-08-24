@@ -25,9 +25,17 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Base directory and Render writable DB folder
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "instance", "agico_client_care.db")}'
+db_dir = "/opt/render/db"
+os.makedirs(db_dir, exist_ok=True)  # ensure folder exists
+
+# Use Render writable folder for SQLite
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(db_dir, 'agico_client_care.db')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Mail config
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
