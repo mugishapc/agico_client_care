@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}View Accident Declaration{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Accident Declaration Details</h5>
+                    <div>
+                        <a href="{{ url_for('manage_requests') }}" class="btn btn-sm btn-light">
+                            <i class="bi bi-arrow-left"></i> Back to Requests
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>Client Information</h6>
+                        <p><strong>Name:</strong> {{ request.user.first_name }} {{ request.user.last_name }}</p>
+                        <p><strong>Email:</strong> {{ request.user.email }}</p>
+                        <p><strong>Phone:</strong> {{ request.phone }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Declaration Details</h6>
+                        <p><strong>Status:</strong> 
+                            <span class="badge bg-{{ 'success' if request.status == 'approved' else 'warning' if request.status == 'pending' else 'danger' }}">
+                                {{ request.status|capitalize }}
+                            </span>
+                        </p>
+                        <p><strong>Submitted:</strong> {{ request.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <h6>Vehicle Information</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Car Type</th>
+                                        <th>Make & Model</th>
+                                        <th>Plate License</th>
+                                        <th>Insurance Policy #</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>{{ request.car_type }}</td>
+                                        <td>{{ request.car_make }} {{ request.car_model }}</td>
+                                        <td>{{ request.plate_license }}</td>
+                                        <td>{{ request.insurance_policy if request.insurance_policy else 'Not specified' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Accident Details</h6>
+                        <div class="card">
+                            <div class="card-body">
+                                <p><strong>Location:</strong> {{ request.accident_location if request.accident_location else 'Not specified' }}</p>
+                                <p><strong>Description:</strong></p>
+                                <p>{{ request.accident_description if request.accident_description else 'No description provided' }}</p>
+                                
+                                {% if request.damage_description %}
+                                <p><strong>Damage Description:</strong></p>
+                                <p>{{ request.damage_description }}</p>
+                                {% endif %}
+                                
+                                {% if request.injuries_description %}
+                                <p><strong>Injuries Description:</strong></p>
+                                <p>{{ request.injuries_description }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6>Other Parties Involved</h6>
+                        <div class="card">
+                            <div class="card-body">
+                                {% if request.other_parties %}
+                                    <p>{{ request.other_parties }}</p>
+                                {% else %}
+                                    <p>No other parties involved</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Witness Information</h6>
+                        <div class="card">
+                            <div class="card-body">
+                                {% if request.witness_info %}
+                                    <p>{{ request.witness_info }}</p>
+                                {% else %}
+                                    <p>No witnesses reported</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h6>Actions</h6>
+                    <div class="btn-group">
+                        {% if request.status == 'pending' %}
+                        <a href="{{ url_for('approve_request', type='accident', id=request.id) }}" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Approve
+                        </a>
+                        <a href="{{ url_for('reject_request', type='accident', id=request.id) }}" class="btn btn-danger">
+                            <i class="bi bi-x-circle"></i> Reject
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('download_request', type='accident', id=request.id) }}" class="btn btn-secondary">
+                            <i class="bi bi-download"></i> Download
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

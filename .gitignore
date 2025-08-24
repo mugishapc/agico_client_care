@@ -1,0 +1,12 @@
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore virtual environment
+venv/
+
+# Ignore local SQLite databases
+instance/*.db
+
+# Ignore uploads (if you don’t want to push user uploads)
+uploads/images/*

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config.from_object(Config)
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "instance", "bic_client_care.db")}'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "instance", "agico_client_care.db")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
@@ -116,10 +116,10 @@ def send_confirmation_email(to, subject_suffix):
 Thank you for your {subject_suffix.lower()}.
 
 We have received your submission and will process it shortly.
-You can check the status in your BIC Client Care dashboard.
+You can check the status in your Agico Client Care dashboard.
 
 Best regards,
-BIC Client Care Team
+Agico Client Care Team
 '''
         )
         mail.send(msg)
@@ -137,10 +137,10 @@ def send_status_email(recipient, request_type, status):
             body=f'''
 Your {request_type} has been {status}.
 
-You can view the details in your BIC Client Care dashboard.
+You can view the details in your Agico Client Care dashboard.
 
 Best regards,
-BIC Client Care Team
+Agico Client Care Team
 '''
         )
         mail.send(msg)
@@ -539,7 +539,7 @@ def declare_accident():
 @login_required
 def branches():
     branches_list = [
-        {'name': 'BIC SIEGE', 'phone': '+25762555777'},
+        {'name': 'AGICO SIEGE', 'phone': '+25762555777'},
         {'name': 'AGENCE KAMENGE', 'phone': '+25779721192'},
         {'name': 'AGENCE KINAMA II', 'phone': '+25769100024'},
         {'name': 'AGENCE CARAMA II', 'phone': '+25765183560'},
@@ -1256,5 +1256,61 @@ def internal_server_error(error):
 def inject_now():
     return {'now': datetime.now()}
 
+@app.route('/admin/delete-user/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_user(user_id):
+    user_to_delete = User.query.get_or_404(user_id)
+    
+    # Prevent admin from deleting themselves
+    if user_to_delete.id == current_user.id:
+        flash('You cannot delete your own account!', 'danger')
+        return redirect(url_for('manage_users'))
+    
+    try:
+        # Delete all related records first to maintain referential integrity
+        Message.query.filter((Message.user_id == user_id) | (Message.admin_id == user_id)).delete()
+        AutoInsuranceRequest.query.filter_by(user_id=user_id).delete()
+        TravelInsuranceRequest.query.filter_by(user_id=user_id).delete()
+        ComesaInsuranceRequest.query.filter_by(user_id=user_id).delete()
+        AccidentDeclaration.query.filter_by(user_id=user_id).delete()
+        
+        # Finally delete the user
+        db.session.delete(user_to_delete)
+        db.session.commit()
+        
+        flash(f'User {user_to_delete.email} has been deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while deleting the user. Please try again.', 'danger')
+        app.logger.error(f'Error deleting user {user_id}: {str(e)}')
+    
+    return redirect(url_for('manage_users'))
+
+
+
+@app.route('/admin/view/<string:type>/<int:id>')
+@login_required
+@admin_required
+def view_request(type, id):
+    if type == 'auto':
+        request = AutoInsuranceRequest.query.get_or_404(id)
+        template = 'admin/view_auto_request.html'
+    elif type == 'travel':
+        request = TravelInsuranceRequest.query.get_or_404(id)
+        template = 'admin/view_travel_request.html'
+    elif type == 'comesa':
+        request = ComesaInsuranceRequest.query.get_or_404(id)
+        template = 'admin/view_comesa_request.html'
+    elif type == 'accident':
+        request = AccidentDeclaration.query.get_or_404(id)
+        template = 'admin/view_accident_request.html'
+    else:
+        abort(404)
+    
+    return render_template(template, request=request, type=type)
+
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}View Travel Insurance Request{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Travel Insurance Request Details</h5>
+                    <div>
+                        <a href="{{ url_for('manage_requests') }}" class="btn btn-sm btn-light">
+                            <i class="bi bi-arrow-left"></i> Back to Requests
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>Client Information</h6>
+                        <p><strong>Name:</strong> {{ request.user.first_name }} {{ request.user.last_name }}</p>
+                        <p><strong>Email:</strong> {{ request.user.email }}</p>
+                        <p><strong>Phone:</strong> {{ request.phone }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Request Details</h6>
+                        <p><strong>Status:</strong> 
+                            <span class="badge bg-{{ 'success' if request.status == 'approved' else 'warning' if request.status == 'pending' else 'danger' }}">
+                                {{ request.status|capitalize }}
+                            </span>
+                        </p>
+                        <p><strong>Submitted:</strong> {{ request.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <h6>Travel Information</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Destination</th>
+                                        <th>Duration</th>
+                                        <th>Travelers</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>{{ request.destination }}</td>
+                                        <td>{{ request.days }} days</td>
+                                        <td>{{ request.travelers if request.travelers else 'Not specified' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if request.additional_info %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Additional Information</h6>
+                        <div class="card">
+                            <div class="card-body">
+                                <p>{{ request.additional_info }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="mt-4">
+                    <h6>Actions</h6>
+                    <div class="btn-group">
+                        {% if request.status == 'pending' %}
+                        <a href="{{ url_for('approve_request', type='travel', id=request.id) }}" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Approve
+                        </a>
+                        <a href="{{ url_for('reject_request', type='travel', id=request.id) }}" class="btn btn-danger">
+                            <i class="bi bi-x-circle"></i> Reject
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('download_request', type='travel', id=request.id) }}" class="btn btn-secondary">
+                            <i class="bi bi-download"></i> Download
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

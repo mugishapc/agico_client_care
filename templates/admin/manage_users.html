@@ -7,28 +7,48 @@
         <div class="card">
             <div class="card-header bg-primary text-white">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Manage Clients</h5>
+                    <h5 class="mb-0">Manage Users</h5>
                     <div>
-                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-light btn-sm">
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-sm btn-light">
                             <i class="bi bi-arrow-left"></i> Back to Dashboard
                         </a>
                     </div>
                 </div>
             </div>
             <div class="card-body">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
                 <div class="row mb-4">
-                    <div class="col-md-6">
-                        <div class="input-group">
-                            <input type="text" class="form-control" placeholder="Search clients..." id="searchInput" value="{{ search }}">
-                            <button class="btn btn-primary" type="button" id="searchButton">
-                                <i class="bi bi-search"></i>
-                            </button>
-                        </div>
+                    <div class="col-md-8">
+                        <form method="GET" action="{{ url_for('manage_users') }}">
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Search by name, email, or phone..." 
+                                       name="search" value="{{ search }}">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="bi bi-search"></i> Search
+                                </button>
+                                {% if search %}
+                                    <a href="{{ url_for('manage_users') }}" class="btn btn-outline-secondary">
+                                        Clear
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </form>
                     </div>
-                    <div class="col-md-6 text-end">
-                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#newUserModal">
-                            <i class="bi bi-plus-circle"></i> Add New Client
-                        </button>
+                    <div class="col-md-4 text-end">
+                        <span class="badge bg-info p-2">
+                            Total Users: {{ users|length }}
+                        </span>
                     </div>
                 </div>
                 
@@ -36,6 +56,7 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
+                                <th>ID</th>
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th>Phone</th>
@@ -47,28 +68,155 @@
                         <tbody>
                             {% for user in users %}
                                 <tr>
+                                    <td>{{ user.id }}</td>
                                     <td>{{ user.first_name }} {{ user.last_name }}</td>
                                     <td>{{ user.email }}</td>
                                     <td>{{ user.phone }}</td>
                                     <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
                                     <td>
-                                        {{ user.auto_requests|length + user.travel_requests|length + user.comesa_requests|length + user.accident_declarations|length }}
+                                        <span class="badge bg-secondary" title="Auto: {{ user.auto_insurance_requests|length }}, Travel: {{ user.travel_insurance_requests|length }}, COMESA: {{ user.comesa_insurance_requests|length }}, Accidents: {{ user.accident_declarations|length }}">
+                                            Total: {{ user.auto_insurance_requests|length + user.travel_insurance_requests|length + user.comesa_insurance_requests|length + user.accident_declarations|length }}
+                                        </span>
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('admin_chat', user_id=user.id) }}" class="btn btn-outline-primary" title="Chat">
-                                                <i class="bi bi-chat-left-text"></i>
-                                            </a>
-                                            <a href="#" class="btn btn-outline-info" title="View Profile">
-                                                <i class="bi bi-person"></i>
-                                            </a>
-                                            <a href="#" class="btn btn-outline-warning" title="Edit">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <a href="#" class="btn btn-outline-danger" title="Delete">
-                                                <i class="bi bi-trash"></i>
-                                            </a>
+                                            <!-- View User Details Button -->
+                                            <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" 
+                                                    data-bs-target="#userDetailsModal{{ user.id }}" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            
+                                            <!-- Delete User Form -->
+                                            <form action="{{ url_for('delete_user', user_id=user.id) }}" method="POST" 
+                                                  onsubmit="return confirm('Are you sure you want to delete {{ user.first_name }} {{ user.last_name }}? This will permanently delete all their data including insurance requests and accident declarations.');"
+                                                  style="display: inline;">
+                                                <button type="submit" class="btn btn-outline-danger" title="Delete User">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
                                         </div>
+                                    </td>
+                                </tr>
+                                
+                                <!-- User Details Modal -->
+                                <div class="modal fade" id="userDetailsModal{{ user.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">User Details: {{ user.first_name }} {{ user.last_name }}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <h6>Personal Information</h6>
+                                                        <p><strong>Email:</strong> {{ user.email }}</p>
+                                                        <p><strong>Phone:</strong> {{ user.phone }}</p>
+                                                        <p><strong>Registered:</strong> {{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                                                        <p><strong>Role:</strong> {{ user.role }}</p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <h6>Requests Summary</h6>
+                                                        <ul class="list-group">
+                                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                                Auto Insurance Requests
+                                                                <span class="badge bg-primary rounded-pill">{{ user.auto_insurance_requests|length }}</span>
+                                                            </li>
+                                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                                Travel Insurance Requests
+                                                                <span class="badge bg-primary rounded-pill">{{ user.travel_insurance_requests|length }}</span>
+                                                            </li>
+                                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                                COMESA Insurance Requests
+                                                                <span class="badge bg-primary rounded-pill">{{ user.comesa_insurance_requests|length }}</span>
+                                                            </li>
+                                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                                Accident Declarations
+                                                                <span class="badge bg-primary rounded-pill">{{ user.accident_declarations|length }}</span>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                                
+                                                {% if user.auto_insurance_requests or user.travel_insurance_requests or user.comesa_insurance_requests or user.accident_declarations %}
+                                                <hr>
+                                                <h6>Recent Activity</h6>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Type</th>
+                                                                <th>Date</th>
+                                                                <th>Status</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for request in user.auto_insurance_requests[-3:]|reverse %}
+                                                            <tr>
+                                                                <td>Auto Insurance</td>
+                                                                <td>{{ request.created_at.strftime('%Y-%m-%d') }}</td>
+                                                                <td>
+                                                                    <span class="badge bg-{{ 'success' if request.status == 'approved' else 'warning' if request.status == 'pending' else 'danger' }}">
+                                                                        {{ request.status|capitalize }}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                            {% endfor %}
+                                                            
+                                                            {% for request in user.travel_insurance_requests[-3:]|reverse %}
+                                                            <tr>
+                                                                <td>Travel Insurance</td>
+                                                                <td>{{ request.created_at.strftime('%Y-%m-%d') }}</td>
+                                                                <td>
+                                                                    <span class="badge bg-{{ 'success' if request.status == 'approved' else 'warning' if request.status == 'pending' else 'danger' }}">
+                                                                        {{ request.status|capitalize }}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                            {% endfor %}
+                                                            
+                                                            {% for request in user.comesa_insurance_requests[-3:]|reverse %}
+                                                            <tr>
+                                                                <td>COMESA Insurance</td>
+                                                                <td>{{ request.created_at.strftime('%Y-%m-%d') }}</td>
+                                                                <td>
+                                                                    <span class="badge bg-{{ 'success' if request.status == 'approved' else 'warning' if request.status == 'pending' else 'danger' }}">
+                                                                        {{ request.status|capitalize }}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                            {% endfor %}
+                                                            
+                                                            {% for declaration in user.accident_declarations[-3:]|reverse %}
+                                                            <tr>
+                                                                <td>Accident Declaration</td>
+                                                                <td>{{ declaration.created_at.strftime('%Y-%m-%d') }}</td>
+                                                                <td>
+                                                                    <span class="badge bg-{{ 'success' if declaration.status == 'approved' else 'warning' if declaration.status == 'pending' else 'danger' }}">
+                                                                        {{ declaration.status|capitalize }}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        {% if search %}
+                                            No users found matching "{{ search }}"
+                                        {% else %}
+                                            No users found
+                                        {% endif %}
                                     </td>
                                 </tr>
                             {% endfor %}
@@ -76,7 +224,8 @@
                     </table>
                 </div>
                 
-                <nav aria-label="Page navigation">
+                {% if users and users|length > 10 %}
+                <nav aria-label="User pagination">
                     <ul class="pagination justify-content-center">
                         <li class="page-item disabled">
                             <a class="page-link" href="#" tabindex="-1">Previous</a>
@@ -89,46 +238,7 @@
                         </li>
                     </ul>
                 </nav>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- New User Modal -->
-<div class="modal fade" id="newUserModal" tabindex="-1" aria-labelledby="newUserModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="newUserModalLabel">Add New Client</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="newUserForm">
-                    <div class="mb-3">
-                        <label for="firstName" class="form-label">First Name</label>
-                        <input type="text" class="form-control" id="firstName" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="lastName" class="form-label">Last Name</label>
-                        <input type="text" class="form-control" id="lastName" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="phone" class="form-label">Phone</label>
-                        <input type="tel" class="form-control" id="phone" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" required>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="saveUserBtn">Save Client</button>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -136,24 +246,18 @@
 
 {% block scripts %}
 <script>
-    // Search functionality
-    document.getElementById('searchButton').addEventListener('click', function() {
-        const search = document.getElementById('searchInput').value;
-        window.location.href = "{{ url_for('manage_users') }}?search=" + encodeURIComponent(search);
-    });
-    
-    // Allow pressing Enter in search field
-    document.getElementById('searchInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            document.getElementById('searchButton').click();
-        }
-    });
-    
-    // New user modal handling
-    document.getElementById('saveUserBtn').addEventListener('click', function() {
-        // In a real app, this would submit via AJAX
-        alert('New client would be saved here in a real app');
-        $('#newUserModal').modal('hide');
+    // Confirmation for delete actions
+    document.addEventListener('DOMContentLoaded', function() {
+        const deleteForms = document.querySelectorAll('form[action*="delete-user"]');
+        
+        deleteForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const userName = this.closest('tr').querySelector('td:nth-child(2)').textContent;
+                if (!confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone and will permanently delete all their data.`)) {
+                    e.preventDefault();
+                }
+            });
+        });
     });
 </script>
 {% endblock %}

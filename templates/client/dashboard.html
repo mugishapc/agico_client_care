@@ -29,8 +29,13 @@
     
     <div class="col-md-8">
         <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Recent Requests</h5>
+                {% if auto_requests or travel_requests or comesa_requests %}
+                <button id="viewAllRequests" class="btn btn-sm btn-light">
+                    <i class="bi bi-eye"></i> View All
+                </button>
+                {% endif %}
             </div>
             <div class="card-body">
                 {% if auto_requests or travel_requests or comesa_requests %}
@@ -44,9 +49,9 @@
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {% for request in auto_requests[:3] %}
-                                    <tr>
+                            <tbody id="requestsTable">
+                                {% for request in auto_requests %}
+                                    <tr class="{% if loop.index > 3 %}request-row hidden-row{% endif %}">
                                         <td>Auto Insurance</td>
                                         <td>{{ request.created_at.strftime('%Y-%m-%d') }}</td>
                                         <td>
@@ -65,8 +70,8 @@
                                     </tr>
                                 {% endfor %}
                                 
-                                {% for request in travel_requests[:3] %}
-                                    <tr>
+                                {% for request in travel_requests %}
+                                    <tr class="{% if loop.index > 3 %}request-row hidden-row{% endif %}">
                                         <td>Travel Insurance</td>
                                         <td>{{ request.created_at.strftime('%Y-%m-%d') }}</td>
                                         <td>
@@ -85,8 +90,8 @@
                                     </tr>
                                 {% endfor %}
                                 
-                                {% for request in comesa_requests[:3] %}
-                                    <tr>
+                                {% for request in comesa_requests %}
+                                    <tr class="{% if loop.index > 3 %}request-row hidden-row{% endif %}">
                                         <td>COMESA Insurance</td>
                                         <td>{{ request.created_at.strftime('%Y-%m-%d') }}</td>
                                         <td>
@@ -107,8 +112,10 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="text-end">
-                        <a href="#" class="btn btn-sm btn-primary">View All</a>
+                    <div class="text-end mt-2">
+                        <small class="text-muted" id="requestsSummary">
+                            Showing {{ [auto_requests|length, travel_requests|length, comesa_requests|length]|max(3) }} of {{ auto_requests|length + travel_requests|length + comesa_requests|length }} requests
+                        </small>
                     </div>
                 {% else %}
                     <div class="alert alert-info">
@@ -119,8 +126,13 @@
         </div>
         
         <div class="card">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Recent Accident Declarations</h5>
+                {% if accident_declarations %}
+                <button id="viewAllAccidents" class="btn btn-sm btn-light">
+                    <i class="bi bi-eye"></i> View All
+                </button>
+                {% endif %}
             </div>
             <div class="card-body">
                 {% if accident_declarations %}
@@ -135,9 +147,9 @@
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {% for declaration in accident_declarations[:3] %}
-                                    <tr>
+                            <tbody id="accidentsTable">
+                                {% for declaration in accident_declarations %}
+                                    <tr class="{% if loop.index > 3 %}accident-row hidden-row{% endif %}">
                                         <td>{{ declaration.created_at.strftime('%Y-%m-%d') }}</td>
                                         <td>{{ declaration.car_type }}</td>
                                         <td>{{ declaration.plate_license }}</td>
@@ -159,8 +171,10 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="text-end">
-                        <a href="#" class="btn btn-sm btn-primary">View All</a>
+                    <div class="text-end mt-2">
+                        <small class="text-muted" id="accidentsSummary">
+                            Showing {{ accident_declarations|length if accident_declarations|length <= 3 else 3 }} of {{ accident_declarations|length }} accident declarations
+                        </small>
                     </div>
                 {% else %}
                     <div class="alert alert-info">
@@ -171,4 +185,89 @@
         </div>
     </div>
 </div>
+
+<style>
+    .hidden-row {
+        display: none;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the buttons and tables
+        const viewAllRequestsBtn = document.getElementById('viewAllRequests');
+        const viewAllAccidentsBtn = document.getElementById('viewAllAccidents');
+        const requestsTable = document.getElementById('requestsTable');
+        const accidentsTable = document.getElementById('accidentsTable');
+        const requestsSummary = document.getElementById('requestsSummary');
+        const accidentsSummary = document.getElementById('accidentsSummary');
+        
+        // Track the state of each table
+        let requestsExpanded = false;
+        let accidentsExpanded = false;
+        
+        // Function to toggle hidden rows in a table
+        function toggleHiddenRows(table, isExpanded, type) {
+            const hiddenRows = table.querySelectorAll('.hidden-row');
+            const totalCount = type === 'requests' ? 
+                {{ auto_requests|length + travel_requests|length + comesa_requests|length }} : 
+                {{ accident_declarations|length }};
+            
+            if (isExpanded) {
+                // Show all rows
+                hiddenRows.forEach(row => {
+                    row.style.display = 'table-row';
+                });
+                
+                if (type === 'requests') {
+                    requestsSummary.textContent = `Showing all ${totalCount} requests`;
+                } else {
+                    accidentsSummary.textContent = `Showing all ${totalCount} accident declarations`;
+                }
+            } else {
+                // Hide extra rows
+                hiddenRows.forEach(row => {
+                    row.style.display = 'none';
+                });
+                
+                if (type === 'requests') {
+                    const showing = Math.min(totalCount, 3);
+                    requestsSummary.textContent = `Showing ${showing} of ${totalCount} requests`;
+                } else {
+                    const showing = Math.min(totalCount, 3);
+                    accidentsSummary.textContent = `Showing ${showing} of ${totalCount} accident declarations`;
+                }
+            }
+        }
+        
+        // Add event listeners to the buttons if they exist
+        if (viewAllRequestsBtn) {
+            viewAllRequestsBtn.addEventListener('click', function() {
+                requestsExpanded = !requestsExpanded;
+                toggleHiddenRows(requestsTable, requestsExpanded, 'requests');
+                
+                // Update button text and icon
+                if (requestsExpanded) {
+                    this.innerHTML = '<i class="bi bi-eye-slash"></i> Show Less';
+                } else {
+                    this.innerHTML = '<i class="bi bi-eye"></i> View All';
+                }
+            });
+        }
+        
+        if (viewAllAccidentsBtn) {
+            viewAllAccidentsBtn.addEventListener('click', function() {
+                accidentsExpanded = !accidentsExpanded;
+                toggleHiddenRows(accidentsTable, accidentsExpanded, 'accidents');
+                
+                // Update button text and icon
+                if (accidentsExpanded) {
+                    this.innerHTML = '<i class="bi bi-eye-slash"></i> Show Less';
+                } else {
+                    this.innerHTML = '<i class="bi bi-eye"></i> View All';
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}
