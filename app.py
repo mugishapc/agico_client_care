@@ -20,6 +20,9 @@ from flask import current_app, Response
 from flask_mail import Mail, Message as MailMessage  # Changed import to avoid conflict
 from sqlalchemy.exc import SQLAlchemyError
 
+
+
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -227,8 +230,14 @@ class AccidentDeclaration(db.Model):
 
 # Create database tables
 with app.app_context():
-    db.create_all()
+        # Create all tables
+        db.create_all()
 
+        # Admin credentials from config
+        
+
+    # Run the Flask app
+   
 # Forms
 class RegistrationForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
@@ -241,10 +250,13 @@ class RegistrationForm(FlaskForm):
     submit = SubmitField('Register')
 
     def validate_email(self, email):
+        # Prevent registration with admin email
+        if email.data == app.config['ADMIN_EMAIL']:
+            raise ValidationError('This email is reserved for admin use.')
+        
         user = User.query.filter_by(email=email.data).first()
         if user:
             raise ValidationError('Email already registered. Please use a different email.')
-
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
@@ -344,6 +356,14 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
+        
+        # Debug logging
+        print(f"Login attempt: {form.email.data}")
+        print(f"User found: {user is not None}")
+        if user:
+            print(f"Password match: {check_password_hash(user.password, form.password.data)}")
+            print(f"User role: {user.role}")
+        
         if user and check_password_hash(user.password, form.password.data):
             login_user(user)
             next_page = request.args.get('next')

@@ -5,8 +5,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, '.env'))
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-here'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///instance/bic_client_care.db'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'd29c234ca310aa6990092d4b6cd4c4854585c51e1f73bf4de510adca03f5bc4e'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///instance/agico_client_care.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Email configuration
@@ -24,5 +24,5 @@ class Config:
     ALLOWED_DOC_EXTENSIONS = {'pdf', 'doc', 'docx'}
    
     # Admin credentials
-    ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL') or 'info@bic.bi'
+    ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL') or 'mugishapc1@gmail.com'
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD') or '0220Mpc.'
