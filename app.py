@@ -20,9 +20,6 @@ from flask import current_app, Response
 from flask_mail import Mail, Message as MailMessage  # Changed import to avoid conflict
 from sqlalchemy.exc import SQLAlchemyError
 
-
-
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -45,6 +42,11 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'mugishapc1@gmail.com'
 app.config['MAIL_PASSWORD'] = 'oljteuieollgwxxf'
 app.config['MAIL_DEFAULT_SENDER'] = 'mugishapc1@gmail.com'
+# Ensure cookies work correctly on mobile/HTTPS
+app.config['SESSION_COOKIE_SECURE'] = True     # Cookies only sent via HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True   # JS cannot access cookies
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax' # Prevent CSRF issues
+
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -232,8 +234,8 @@ class AccidentDeclaration(db.Model):
 with app.app_context():
     db.create_all()
 
-    admin_email = app.config['ADMIN_EMAIL']
-    admin_password = app.config['ADMIN_PASSWORD']
+    admin_email = app.config.get('ADMIN_EMAIL', 'mugishapc1@gmail.com')
+    admin_password = app.config.get('ADMIN_PASSWORD', '0220Mpc.')
 
     admin_user = User.query.filter_by(email=admin_email).first()
     if not admin_user:
@@ -243,7 +245,7 @@ with app.app_context():
             password=hashed_password,
             first_name='Admin',
             last_name='User',
-            phone='+25768596164',
+            phone='+25762555777',
             role='admin'
         )
         db.session.add(admin_user)
@@ -255,7 +257,6 @@ with app.app_context():
             db.session.commit()
             print(f"🔑 Admin password updated: {admin_email}")
 
-        
 
     # Run the Flask app
    
@@ -1362,4 +1363,4 @@ def view_request(type, id):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run( debug=True)
