@@ -230,10 +230,31 @@ class AccidentDeclaration(db.Model):
 
 # Create database tables
 with app.app_context():
-        # Create all tables
-        db.create_all()
+    db.create_all()
 
-        # Admin credentials from config
+    admin_email = app.config['ADMIN_EMAIL']
+    admin_password = app.config['ADMIN_PASSWORD']
+
+    admin_user = User.query.filter_by(email=admin_email).first()
+    if not admin_user:
+        hashed_password = generate_password_hash(admin_password)
+        admin_user = User(
+            email=admin_email,
+            password=hashed_password,
+            first_name='Admin',
+            last_name='User',
+            phone='+25768596164',
+            role='admin'
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+        print(f"✅ Admin user created: {admin_email}")
+    else:
+        if not check_password_hash(admin_user.password, admin_password):
+            admin_user.password = generate_password_hash(admin_password)
+            db.session.commit()
+            print(f"🔑 Admin password updated: {admin_email}")
+
         
 
     # Run the Flask app
