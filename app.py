@@ -28,7 +28,7 @@ app.config.from_object(Config)
 
 # Base directory and Render writable DB folder
 basedir = os.path.abspath(os.path.dirname(__file__))
-db_dir = "/opt/render/db"
+db_dir = os.path.join(basedir, "instance")
 os.makedirs(db_dir, exist_ok=True)  # ensure folder exists
 
 # Use Render writable folder for SQLite
@@ -46,7 +46,8 @@ app.config['MAIL_DEFAULT_SENDER'] = 'mugishapc1@gmail.com'
 app.config['SESSION_COOKIE_SECURE'] = True     # Cookies only sent via HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True   # JS cannot access cookies
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax' # Prevent CSRF issues
-
+app.config['ADMIN_EMAIL'] = 'info@mpc.com'
+app.config['ADMIN_PASSWORD'] = '0220Mpc#'
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -234,8 +235,9 @@ class AccidentDeclaration(db.Model):
 with app.app_context():
     db.create_all()
 
-    admin_email = app.config.get('ADMIN_EMAIL', 'mugishapc1@gmail.com')
-    admin_password = app.config.get('ADMIN_PASSWORD', '0220Mpc.')
+    # Use the updated admin credentials
+    admin_email = app.config.get('ADMIN_EMAIL', 'info@agico.com')
+    admin_password = app.config.get('ADMIN_PASSWORD', '0220Mpc#')
 
     admin_user = User.query.filter_by(email=admin_email).first()
     if not admin_user:
@@ -252,13 +254,11 @@ with app.app_context():
         db.session.commit()
         print(f"✅ Admin user created: {admin_email}")
     else:
+        # Update password if it doesn't match
         if not check_password_hash(admin_user.password, admin_password):
             admin_user.password = generate_password_hash(admin_password)
             db.session.commit()
             print(f"🔑 Admin password updated: {admin_email}")
-
-
-    # Run the Flask app
    
 # Forms
 class RegistrationForm(FlaskForm):
@@ -272,8 +272,8 @@ class RegistrationForm(FlaskForm):
     submit = SubmitField('Register')
 
     def validate_email(self, email):
-        # Prevent registration with admin email
-        if email.data == app.config['ADMIN_EMAIL']:
+        # Prevent registration with admin email - UPDATED
+        if email.data == 'info@agico.com':  # Use the specific admin email
             raise ValidationError('This email is reserved for admin use.')
         
         user = User.query.filter_by(email=email.data).first()
