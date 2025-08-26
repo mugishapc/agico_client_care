@@ -346,6 +346,12 @@ def register():
     form = RegistrationForm()
     if form.validate_on_submit():
         try:
+            # Check if user already exists
+            existing_user = User.query.filter_by(email=form.email.data).first()
+            if existing_user:
+                flash('Email already registered. Please use a different email.', 'danger')
+                return render_template('auth/register.html', title='Register', form=form)
+            
             hashed_password = generate_password_hash(form.password.data)
             user = User(
                 email=form.email.data,
@@ -361,7 +367,16 @@ def register():
             db.session.add(user)
             db.session.commit()
             
+            # Check if request is from mobile
+            user_agent = request.headers.get('User-Agent', '').lower()
+            is_mobile = any(device in user_agent for device in ['mobile', 'android', 'iphone', 'ipad', 'ipod'])
+            
             flash('Your account has been created! You can now log in.', 'success')
+            
+            # For mobile devices, provide a more prominent success message
+            if is_mobile:
+                return render_template('auth/register_success.html', title='Registration Successful')
+                
             return redirect(url_for('login'))
         except Exception as e:
             db.session.rollback()
@@ -1360,7 +1375,18 @@ def view_request(type, id):
     
     return render_template(template, request=request, type=type)
 
-
+@app.after_request
+def after_request(response):
+    # Add headers to prevent caching for mobile devices
+    user_agent = request.headers.get('User-Agent', '').lower()
+    is_mobile = any(device in user_agent for device in ['mobile', 'android', 'iphone', 'ipad', 'ipod'])
+    
+    if is_mobile:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    
+    return response
 
 if __name__ == '__main__':
     app.run( debug=True)
