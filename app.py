@@ -43,7 +43,7 @@ app.config['MAIL_USERNAME'] = 'mugishapc1@gmail.com'
 app.config['MAIL_PASSWORD'] = 'oljteuieollgwxxf'
 app.config['MAIL_DEFAULT_SENDER'] = 'mugishapc1@gmail.com'
 # Ensure cookies work correctly on mobile/HTTPS
-app.config['SESSION_COOKIE_SECURE'] = True     # Cookies only sent via HTTPS
+
 app.config['SESSION_COOKIE_HTTPONLY'] = True   # JS cannot access cookies
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax' # Prevent CSRF issues
 app.config['ADMIN_EMAIL'] = 'info@mpc.com'
