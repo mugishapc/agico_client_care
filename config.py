@@ -10,8 +10,16 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'd29c234ca310aa6990092d4b6cd4c4854585c51e1f73bf4de510adca03f5bc4e'
 
     # Database configuration
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or f'sqlite:///{os.path.join(basedir, "instance", "agico_client_care.db")}'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    db_url = os.environ.get('DATABASE_URL')
+    if not db_url:
+      raise RuntimeError("❌ DATABASE_URL is not set. Please configure your Neon Postgres URL in .env")
+
+    if db_url.startswith("postgres://"):
+     db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+    SQLALCHEMY_DATABASE_URI = db_url
+
+
 
     # Email configuration
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')

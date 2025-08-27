@@ -27,18 +27,17 @@ app.config.from_object(Config)
 
 # ✅ Database Config
 # Use DATABASE_URL from Render if available, else fallback to SQLite (for local dev)
-db_url = os.environ.get("DATABASE_URL")  # Render will provide this
-if db_url:
-    # Render sometimes gives "postgres://" which SQLAlchemy rejects → fix it
-    if db_url.startswith("postgres://"):
-        db_url = db_url.replace("postgres://", "postgresql://", 1)
-    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
-else:
-    # fallback to SQLite locally
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    db_path = os.path.join(basedir, "instance", "agico_client_care.db")
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+db_url = os.environ.get("DATABASE_URL")
+if not db_url:
+    raise RuntimeError("❌ DATABASE_URL is not set. Please configure your Neon Postgres URL in .env")
+
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+
+print("🔗 Using database:", app.config["SQLALCHEMY_DATABASE_URI"])
+
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -55,6 +54,9 @@ app.config["SESSION_COOKIE_HTTPONLY"] = True   # JS cannot access cookies
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # Prevent CSRF issues
 app.config["ADMIN_EMAIL"] = "info@mpc.com"
 app.config["ADMIN_PASSWORD"] = "0220Mpc#"
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "info@mpc.com")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "0220Mpc#")
+
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -72,6 +74,23 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@app.before_request
+def create_admin():
+    with app.app_context():
+        if not User.query.filter_by(email="info@mpc.com").first():
+            admin = User(
+                email="info@mpc.com",
+                password=generate_password_hash("0220Mpc#"),
+                first_name="AGICO STAFF",     # ✅ required
+                last_name="Admin",       # ✅ required
+                phone="+25765777555",      # ✅ required if not null
+                role="admin",
+                is_admin=True
+            )
+            db.session.add(admin)
+            db.session.commit()
+
+
 # Context processors
 @app.context_processor
 def inject_datetime():
@@ -86,12 +105,13 @@ configure_uploads(app, (images, docs))
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120),  nullable=False)
-    password = db.Column(db.String(100), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
     phone = db.Column(db.String(20))
     role = db.Column(db.String(20), default='client')  # 'client' or 'admin'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_admin = db.Column(db.Boolean, default=False)
 
     # Relationships
     auto_insurance_requests = db.relationship('AutoInsuranceRequest', back_populates='user', lazy=True)
@@ -237,14 +257,6 @@ class AccidentDeclaration(db.Model):
     summary = db.Column(db.Text)
     status = db.Column(db.String(20), default='pending')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-
-
-
-
-
-
-
 
 
 # Create database tables
