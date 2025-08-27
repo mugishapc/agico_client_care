@@ -259,7 +259,12 @@ with app.app_context():
             admin_user.password = generate_password_hash(admin_password)
             db.session.commit()
             print(f"🔑 Admin password updated: {admin_email}")
-   
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
 # Forms
 class RegistrationForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
@@ -282,6 +287,7 @@ class RegistrationForm(FlaskForm):
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
+    remember = BooleanField('Remember Me')
     submit = SubmitField('Login')
 
 class AutoInsuranceForm(FlaskForm):
@@ -402,9 +408,13 @@ def login():
             print(f"User role: {user.role}")
         
         if user and check_password_hash(user.password, form.password.data):
-            login_user(user)
+            login_user(user, remember=form.remember.data)
             next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('dashboard'))
+            
+            if user.role == 'admin':
+                return redirect(next_page) if next_page else redirect(url_for('admin_dashboard'))
+            else:
+                return redirect(next_page) if next_page else redirect(url_for('dashboard'))
         else:
             flash('Login unsuccessful. Please check email and password.', 'danger')
     
@@ -416,9 +426,7 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
+
 
 # Client routes
 @app.route('/dashboard')
@@ -1389,4 +1397,6 @@ def after_request(response):
     return response
 
 if __name__ == '__main__':
-    app.run( debug=True)
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)

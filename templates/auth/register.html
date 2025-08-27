@@ -1,108 +1,383 @@
-{% extends "base.html" %}
-{% block title %}Register{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#007bff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Register - Agico Client Care</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #007bff;
+            --primary-dark: #0069d9;
+            --secondary: #6c757d;
+            --success: #28a745;
+            --danger: #dc3545;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --border-radius: 10px;
+            --box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
 
-{% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Create Your Account</h4>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #f5f8ff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 30px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .logo div {
+            background-color: #007bff;
+            color: white;
+            width: 60px;
+            height: 60px;
+            line-height: 60px;
+            border-radius: 10px;
+            margin: 0 auto 15px;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+            color: var(--dark);
+        }
+
+        .logo p {
+            color: var(--secondary);
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+            outline: none;
+        }
+
+        .input-icon {
+            position: relative;
+        }
+
+        .input-icon i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--secondary);
+            z-index: 2;
+        }
+
+        .input-icon .form-control {
+            padding-left: 45px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--secondary);
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--secondary);
+        }
+
+        .login-link a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-danger {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(220, 53, 69, 0.2);
+        }
+
+        .alert-success {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(40, 167, 69, 0.2);
+        }
+
+        @media (max-width: 576px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .logo h1 {
+                font-size: 20px;
+            }
+            
+            body {
+                padding: 10px;
+            }
+        }
+        
+        /* Mobile-specific optimizations */
+        @media (max-width: 400px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .form-control {
+                padding: 10px 12px;
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+            
+            .input-icon .form-control {
+                padding-left: 40px;
+            }
+            
+            .btn {
+                padding: 12px;
+            }
+        }
+        
+        /* Prevent zoom on input focus in iOS */
+        @media screen and (max-width: 767px) {
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <div>AG</div>
+            <h1>Agico Client Care</h1>
+            <p>Create your account</p>
+        </div>
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            
+            <div class="form-group">
+                <label for="first_name">First Name</label>
+                <div class="input-icon">
+                    <i class="fas fa-user"></i>
+                    {{ form.first_name(class="form-control", placeholder="Enter your first name") }}
+                </div>
+                {% if form.first_name.errors %}
+                    <div class="text-danger mt-1">
+                        {% for error in form.first_name.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
-            <div class="card-body">
-                <form method="POST">
-                    {{ form.hidden_tag() }}
-                    
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            {{ form.first_name.label(class="form-label") }}
-                            {{ form.first_name(class="form-control") }}
-                            {% if form.first_name.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.first_name.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="col-md-6">
-                            {{ form.last_name.label(class="form-label") }}
-                            {{ form.last_name(class="form-control") }}
-                            {% if form.last_name.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.last_name.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="col-12">
-                            {{ form.email.label(class="form-label") }}
-                            {{ form.email(class="form-control") }}
-                            {% if form.email.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.email.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="col-md-6">
-                            {{ form.phone.label(class="form-label") }}
-                            {{ form.phone(class="form-control") }}
-                            {% if form.phone.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.phone.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="col-md-6">
-                            {{ form.password.label(class="form-label") }}
-                            {{ form.password(class="form-control") }}
-                            {% if form.password.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.password.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="col-md-6">
-                            {{ form.confirm_password.label(class="form-label") }}
-                            {{ form.confirm_password(class="form-control") }}
-                            {% if form.confirm_password.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.confirm_password.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
+            
+            <div class="form-group">
+                <label for="last_name">Last Name</label>
+                <div class="input-icon">
+                    <i class="fas fa-user"></i>
+                    {{ form.last_name(class="form-control", placeholder="Enter your last name") }}
+                </div>
+                {% if form.last_name.errors %}
+                    <div class="text-danger mt-1">
+                        {% for error in form.last_name.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
                     </div>
-                    
-                    <div class="mt-4 form-check">
-                        <input type="checkbox" class="form-check-input" id="terms" required>
-                        <label class="form-check-label" for="terms">
-                            I agree to the <a href="#">Terms and Conditions</a>
-                        </label>
-                    </div>
-                    
-                    <div class="d-grid mt-4">
-                        {{ form.submit(class="btn btn-primary") }}
-                    </div>
-                    
-                    <div class="mt-3 text-center">
-                        Already have an account? <a href="{{ url_for('login') }}">Login here</a>
-                    </div>
-                </form>
+                {% endif %}
             </div>
+            
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <div class="input-icon">
+                    <i class="fas fa-envelope"></i>
+                    {{ form.email(class="form-control", placeholder="Enter your email") }}
+                </div>
+                {% if form.email.errors %}
+                    <div class="text-danger mt-1">
+                        {% for error in form.email.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <div class="input-icon">
+                    <i class="fas fa-phone"></i>
+                    {{ form.phone(class="form-control", placeholder="Enter your phone number") }}
+                </div>
+                {% if form.phone.errors %}
+                    <div class="text-danger mt-1">
+                        {% for error in form.phone.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-icon">
+                    <i class="fas fa-lock"></i>
+                    {{ form.password(class="form-control", placeholder="Create a password", id="password") }}
+                    <i class="password-toggle fas fa-eye" id="togglePassword"></i>
+                </div>
+                {% if form.password.errors %}
+                    <div class="text-danger mt-1">
+                        {% for error in form.password.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <div class="input-icon">
+                    <i class="fas fa-lock"></i>
+                    {{ form.confirm_password(class="form-control", placeholder="Confirm your password", id="confirmPassword") }}
+                    <i class="password-toggle fas fa-eye" id="toggleConfirmPassword"></i>
+                </div>
+                {% if form.confirm_password.errors %}
+                    <div class="text-danger mt-1">
+                        {% for error in form.confirm_password.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <button type="submit" class="btn">Register</button>
+        </form>
+        
+        <div class="login-link">
+            Already have an account? <a href="{{ url_for('login') }}">Login here</a>
         </div>
     </div>
-</div>
-{% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Password visibility toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const togglePassword = document.querySelector('#togglePassword');
+            const password = document.querySelector('#password');
+            
+            const toggleConfirmPassword = document.querySelector('#toggleConfirmPassword');
+            const confirmPassword = document.querySelector('#confirmPassword');
+            
+            // Toggle main password visibility
+            togglePassword.addEventListener('click', function() {
+                // Toggle the type attribute
+                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                password.setAttribute('type', type);
+                
+                // Toggle the eye icon
+                this.classList.toggle('fa-eye');
+                this.classList.toggle('fa-eye-slash');
+            });
+            
+            // Toggle confirm password visibility
+            toggleConfirmPassword.addEventListener('click', function() {
+                // Toggle the type attribute
+                const type = confirmPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+                confirmPassword.setAttribute('type', type);
+                
+                // Toggle the eye icon
+                this.classList.toggle('fa-eye');
+                this.classList.toggle('fa-eye-slash');
+            });
+        });
+    </script>
+</body>
+</html>
