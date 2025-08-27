@@ -124,7 +124,7 @@ class Message(db.Model):
 def send_confirmation_email(to, subject_suffix):
     try:
         msg = MailMessage(
-            subject=f'BIC Client Care - {subject_suffix} Received',
+            subject=f'Agico Client Care - {subject_suffix} Received',
             recipients=[to],
             body=f'''
 Thank you for your {subject_suffix.lower()}.
@@ -1433,4 +1433,4 @@ def after_request(response):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(host="0.0.0.0", debug=True)
