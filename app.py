@@ -1,7 +1,7 @@
 import base64
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, abort, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, abort, send_file, current_app, Response
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+from flask_migrate import Migrate, upgrade
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, SelectField, TextAreaField, IntegerField, BooleanField
@@ -16,8 +16,7 @@ from config import Config
 from xhtml2pdf import pisa
 from io import BytesIO
 import logging
-from flask import current_app, Response
-from flask_mail import Mail, Message as MailMessage  # Changed import to avoid conflict
+from flask_mail import Mail, Message as MailMessage
 from sqlalchemy.exc import SQLAlchemyError
 
 logging.basicConfig(level=logging.INFO)
@@ -26,28 +25,36 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Base directory and Render writable DB folder
-basedir = os.path.abspath(os.path.dirname(__file__))
-db_dir = os.path.join(basedir, "instance")
-os.makedirs(db_dir, exist_ok=True)  # ensure folder exists
+# ✅ Database Config
+# Use DATABASE_URL from Render if available, else fallback to SQLite (for local dev)
+db_url = os.environ.get("DATABASE_URL")  # Render will provide this
+if db_url:
+    # Render sometimes gives "postgres://" which SQLAlchemy rejects → fix it
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+else:
+    # fallback to SQLite locally
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    db_path = os.path.join(basedir, "instance", "agico_client_care.db")
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
 
-# Use Render writable folder for SQLite
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(db_dir, 'agico_client_care.db')}"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Mail config
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'mpc0679@gmail.com'
-app.config['MAIL_PASSWORD'] = 'cgjg xxug irfw gjyp'
-app.config['MAIL_DEFAULT_SENDER'] = 'mpc0679@gmail.com'
-# Ensure cookies work correctly on mobile/HTTPS
+app.config["MAIL_SERVER"] = "smtp.gmail.com"
+app.config["MAIL_PORT"] = 587
+app.config["MAIL_USE_TLS"] = True
+app.config["MAIL_USERNAME"] = "mpc0679@gmail.com"
+app.config["MAIL_PASSWORD"] = "cgjg xxug irfw gjyp"
+app.config["MAIL_DEFAULT_SENDER"] = "mpc0679@gmail.com"
 
-app.config['SESSION_COOKIE_HTTPONLY'] = True   # JS cannot access cookies
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax' # Prevent CSRF issues
-app.config['ADMIN_EMAIL'] = 'info@mpc.com'
-app.config['ADMIN_PASSWORD'] = '0220Mpc#'
+# Ensure cookies work correctly on mobile/HTTPS
+app.config["SESSION_COOKIE_HTTPONLY"] = True   # JS cannot access cookies
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # Prevent CSRF issues
+app.config["ADMIN_EMAIL"] = "info@mpc.com"
+app.config["ADMIN_PASSWORD"] = "0220Mpc#"
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -231,34 +238,36 @@ class AccidentDeclaration(db.Model):
     status = db.Column(db.String(20), default='pending')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+
+
+
+
+
+
+
+
+
 # Create database tables
 with app.app_context():
-    db.create_all()
-
-    # Use the updated admin credentials
-    admin_email = app.config.get('ADMIN_EMAIL', 'info@agico.com')
-    admin_password = app.config.get('ADMIN_PASSWORD', '0220Mpc#')
-
-    admin_user = User.query.filter_by(email=admin_email).first()
-    if not admin_user:
-        hashed_password = generate_password_hash(admin_password)
-        admin_user = User(
-            email=admin_email,
-            password=hashed_password,
-            first_name='Admin',
-            last_name='User',
-            phone='+25762555777',
-            role='admin'
-        )
-        db.session.add(admin_user)
-        db.session.commit()
-        print(f"✅ Admin user created: {admin_email}")
-    else:
-        # Update password if it doesn't match
-        if not check_password_hash(admin_user.password, admin_password):
-            admin_user.password = generate_password_hash(admin_password)
-            db.session.commit()
-            print(f"🔑 Admin password updated: {admin_email}")
+    try:
+        # Check if migrations directory exists, if not create it
+        migrations_dir = os.path.join(os.path.dirname(__file__), 'migrations')
+        if not os.path.exists(migrations_dir):
+            print("Migrations directory doesn't exist. Creating it...")
+            os.makedirs(migrations_dir)
+            
+        # Initialize database
+        db.create_all()
+        print("✅ Database tables created successfully")
+        
+    except Exception as e:
+        print(f"⚠️ Database initialization failed: {e}")
+        # If there's an error, try to create the tables directly
+        try:
+            db.create_all()
+            print("✅ Database tables created using create_all()")
+        except Exception as e2:
+            print(f"❌ Database creation completely failed: {e2}")
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -860,71 +869,7 @@ def delete_accident_declaration(id):
     flash('Your accident declaration has been deleted!', 'success')
     return redirect(url_for('dashboard'))
 
-@app.route('/download/auto/<int:id>') 
-@login_required
-def download_auto_request(id):
-    request_auto = AutoInsuranceRequest.query.get_or_404(id)
-    if request_auto.user_id != current_user.id:
-        abort(403)
-    
-    # Prepare image data
-    image_data = {
-        'carte_rose': None,
-        'ancient_card': None
-    }
-    
-    # Helper function to get image data
-    def get_image_data(filename):
-        if not filename:
-            return None
-        try:
-            image_path = os.path.join('static/uploads/images', filename)
-            if os.path.exists(image_path):
-                with open(image_path, 'rb') as f:
-                    encoded_string = base64.b64encode(f.read()).decode('utf-8')
-                    ext = os.path.splitext(filename)[1].lower().replace('.', '')
-                    if ext == 'jpg':
-                        ext = 'jpeg'
-                    return f"data:image/{ext};base64,{encoded_string}"
-        except Exception as e:
-            current_app.logger.error(f"Error processing image {filename}: {e}")
-        return None
-    
-    # Get image data
-    image_data['carte_rose'] = get_image_data(request_auto.carte_rose)
-    image_data['ancient_card'] = get_image_data(request_auto.ancient_card)
-    
-    # Render HTML with image data
-    html = render_template(
-        'client/pdf_auto_request.html', 
-        request=request_auto,
-        now=datetime.now(),
-        images=image_data
-    )
-    
-    # Create PDF
-    pdf = BytesIO()
-    pisa.CreatePDF(html, dest=pdf)
-    pdf.seek(0)
-    
-    return send_file(
-        pdf,
-        as_attachment=True,
-        download_name=f"auto_insurance_request_{request_auto.id}.pdf",
-        mimetype='application/pdf'
-    )
-    
-    # Create PDF
-    pdf = BytesIO()
-    pisa.CreatePDF(html, dest=pdf)
-    pdf.seek(0)
-    
-    return send_file(
-        pdf,
-        as_attachment=True,
-        download_name=f"auto_insurance_request_{request_auto.id}.pdf",
-        mimetype='application/pdf'
-    )
+
 
 # Admin routes
 @app.route('/admin/dashboard')
@@ -1079,49 +1024,109 @@ def reject_request(type, id):
     flash(f'The {type} request has been rejected!', 'success')
     return redirect(url_for('manage_requests'))
 
+@app.route('/download/auto/<int:id>') 
+@login_required
+def download_auto_request(id):
+    request_auto = AutoInsuranceRequest.query.get_or_404(id)
+    if request_auto.user_id != current_user.id and current_user.role != 'admin':
+        abort(403)
+    
+    # Prepare image data with proper file paths
+    image_data = {
+        'carte_rose': None,
+        'ancient_card': None
+    }
+    
+    # Helper function to get image file path
+    def get_image_path(filename):
+        if not filename:
+            return None
+        try:
+            image_path = os.path.join(app.root_path, 'static', 'uploads', 'images', filename)
+            if os.path.exists(image_path):
+                return image_path
+        except Exception as e:
+            current_app.logger.error(f"Error finding image {filename}: {e}")
+        return None
+    
+    # Get image paths
+    carte_rose_path = get_image_path(request_auto.carte_rose)
+    ancient_card_path = get_image_path(request_auto.ancient_card)
+    
+    # Render HTML with image references
+    html = render_template(
+        'client/pdf_auto_request.html', 
+        request=request_auto,
+        now=datetime.now(),
+        carte_rose_path=carte_rose_path,
+        ancient_card_path=ancient_card_path
+    )
+    
+    # Create PDF with images
+    pdf = BytesIO()
+    pisa_status = pisa.CreatePDF(
+        html, 
+        dest=pdf,
+        link_callback=lambda uri, _: get_image_path(uri) if uri in [request_auto.carte_rose, request_auto.ancient_card] else None
+    )
+    
+    if pisa_status.err:
+        current_app.logger.error("PDF generation error: %s", pisa_status.err)
+        flash('Error generating PDF. Please try again.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    pdf.seek(0)
+    
+    return send_file(
+        pdf,
+        as_attachment=True,
+        download_name=f"auto_insurance_request_{request_auto.id}.pdf",
+        mimetype='application/pdf'
+    )
+
 @app.route('/download/travel/<int:id>')
 @login_required
 def download_travel_request(id):
     request_travel = TravelInsuranceRequest.query.get_or_404(id)
-    if request_travel.user_id != current_user.id:
+    if request_travel.user_id != current_user.id and current_user.role != 'admin':
         abort(403)
     
-    # Prepare image data
-    image_data = {
-        'passport': None
-    }
-    
-    # Helper function to get image data
-    def get_image_data(filename):
+    # Helper function to get image file path
+    def get_image_path(filename):
         if not filename:
             return None
         try:
-            image_path = os.path.join('static/uploads/images', filename)
+            image_path = os.path.join(app.root_path, 'static', 'uploads', 'images', filename)
             if os.path.exists(image_path):
-                with open(image_path, 'rb') as f:
-                    encoded_string = base64.b64encode(f.read()).decode('utf-8')
-                    ext = os.path.splitext(filename)[1].lower().replace('.', '')
-                    if ext == 'jpg':
-                        ext = 'jpeg'
-                    return f"data:image/{ext};base64,{encoded_string}"
+                return image_path
         except Exception as e:
-            current_app.logger.error(f"Error processing image {filename}: {e}")
+            current_app.logger.error(f"Error finding image {filename}: {e}")
         return None
     
-    # Get image data
-    image_data['passport'] = get_image_data(request_travel.passport)
+    # Get image path
+    passport_path = get_image_path(request_travel.passport)
     
-    # Render HTML with image data
+    # Render HTML with image references
     html = render_template(
         'client/pdf_travel_request.html', 
         request=request_travel,
         now=datetime.now(),
-        images=image_data
+        passport_path=passport_path
     )
     
-    # Create PDF
+    # Create PDF with images
     pdf = BytesIO()
-    pisa.CreatePDF(html, dest=pdf)
+    pisa_status = pisa.CreatePDF(
+        html, 
+        dest=pdf,
+        link_callback=lambda uri, _: get_image_path(uri) if uri == request_travel.passport else None
+    )
+    
+    if pisa_status.err:
+        current_app.logger.error("PDF generation error: %s", pisa_status.err)
+        flash('Error generating PDF. Please try again.', 'danger')
+        return redirect(url_for('dashboard'))
+    
     pdf.seek(0)
     
     return send_file(
@@ -1135,47 +1140,47 @@ def download_travel_request(id):
 @login_required
 def download_comesa_request(id):
     request_comesa = ComesaInsuranceRequest.query.get_or_404(id)
-    if request_comesa.user_id != current_user.id:
+    if request_comesa.user_id != current_user.id and current_user.role != 'admin':
         abort(403)
     
-    # Prepare image data
-    image_data = {
-        'carte_rose': None,
-        'ancient_card': None
-    }
-    
-    # Helper function to get image data
-    def get_image_data(filename):
+    # Helper function to get image file path
+    def get_image_path(filename):
         if not filename:
             return None
         try:
-            image_path = os.path.join('static/uploads/images', filename)
+            image_path = os.path.join(app.root_path, 'static', 'uploads', 'images', filename)
             if os.path.exists(image_path):
-                with open(image_path, 'rb') as f:
-                    encoded_string = base64.b64encode(f.read()).decode('utf-8')
-                    ext = os.path.splitext(filename)[1].lower().replace('.', '')
-                    if ext == 'jpg':
-                        ext = 'jpeg'
-                    return f"data:image/{ext};base64,{encoded_string}"
+                return image_path
         except Exception as e:
-            current_app.logger.error(f"Error processing image {filename}: {e}")
+            current_app.logger.error(f"Error finding image {filename}: {e}")
         return None
     
-    # Get image data
-    image_data['carte_rose'] = get_image_data(request_comesa.carte_rose)
-    image_data['ancient_card'] = get_image_data(request_comesa.ancient_card)
+    # Get image paths
+    carte_rose_path = get_image_path(request_comesa.carte_rose)
+    ancient_card_path = get_image_path(request_comesa.ancient_card)
     
-    # Render HTML with image data
+    # Render HTML with image references
     html = render_template(
         'client/pdf_comesa_request.html', 
         request=request_comesa,
         now=datetime.now(),
-        images=image_data
+        carte_rose_path=carte_rose_path,
+        ancient_card_path=ancient_card_path
     )
     
-    # Create PDF
+    # Create PDF with images
     pdf = BytesIO()
-    pisa.CreatePDF(html, dest=pdf)
+    pisa_status = pisa.CreatePDF(
+        html, 
+        dest=pdf,
+        link_callback=lambda uri, _: get_image_path(uri) if uri in [request_comesa.carte_rose, request_comesa.ancient_card] else None
+    )
+    
+    if pisa_status.err:
+        current_app.logger.error("PDF generation error: %s", pisa_status.err)
+        flash('Error generating PDF. Please try again.', 'danger')
+        return redirect(url_for('dashboard'))
+    
     pdf.seek(0)
     
     return send_file(
@@ -1185,68 +1190,159 @@ def download_comesa_request(id):
         mimetype='application/pdf'
     )
 
+@app.route('/download/accident/<int:id>')
+@login_required
+def download_accident_declaration(id):
+    declaration = AccidentDeclaration.query.get_or_404(id)
+    if declaration.user_id != current_user.id and current_user.role != 'admin':
+        abort(403)
+    
+    # Helper function to get image file path
+    def get_image_path(filename):
+        if not filename:
+            return None
+        try:
+            image_path = os.path.join(app.root_path, 'static', 'uploads', 'images', filename)
+            if os.path.exists(image_path):
+                return image_path
+        except Exception as e:
+            current_app.logger.error(f"Error finding image {filename}: {e}")
+        return None
+    
+    # Prepare image paths
+    image_paths = {}
+    image_fields = [
+        'accident_image1', 'accident_image2', 'accident_image3',
+        'carte_rose_image', 'insurance_card_image', 'driving_license_image'
+    ]
+    
+    for field in image_fields:
+        filename = getattr(declaration, field)
+        image_paths[field] = get_image_path(filename)
+    
+    # Render HTML with image references
+    html = render_template(
+        'client/pdf_accident_declaration.html', 
+        declaration=declaration,
+        now=datetime.now(),
+        image_paths=image_paths
+    )
+    
+    # Create PDF with images
+    pdf = BytesIO()
+    
+    # Create a callback function for image handling
+    def link_callback(uri, _):
+        # Check if this URI matches any of our image filenames
+        for field in image_fields:
+            filename = getattr(declaration, field)
+            if filename and uri == filename:
+                return get_image_path(filename)
+        return None
+    
+    pisa_status = pisa.CreatePDF(html, dest=pdf, link_callback=link_callback)
+    
+    if pisa_status.err:
+        current_app.logger.error("PDF generation error: %s", pisa_status.err)
+        flash('Error generating PDF. Please try again.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    pdf.seek(0)
+    
+    return send_file(
+        pdf,
+        as_attachment=True,
+        download_name=f"accident_declaration_{declaration.id}.pdf",
+        mimetype='application/pdf'
+    )
+
 @app.route('/admin/download/<string:type>/<int:id>')
 @login_required
 @admin_required
 def download_request(type, id):
-    # Helper function to get base64 encoded image data
-    def get_image_data(filename):
+    # Helper function to get image file path
+    def get_image_path(filename):
         if not filename:
-            current_app.logger.debug("No image filename provided")
             return None
         try:
-            # Construct the full path to the image in static/uploads/images
-            image_path = os.path.join(current_app.root_path, 'static', 'uploads', 'images', filename)
-            current_app.logger.debug(f"Looking for image at: {image_path}")
-            
+            image_path = os.path.join(app.root_path, 'static', 'uploads', 'images', filename)
             if os.path.exists(image_path):
-                with open(image_path, "rb") as image_file:
-                    return base64.b64encode(image_file.read()).decode('utf-8')
-            else:
-                current_app.logger.error(f"Image file not found at: {image_path}")
-                return None
+                return image_path
         except Exception as e:
-            current_app.logger.error(f"Error processing image {filename}: {str(e)}")
-            return None
+            current_app.logger.error(f"Error finding image {filename}: {e}")
+        return None
 
     if type == 'auto':
         request = AutoInsuranceRequest.query.get_or_404(id)
         filename = f"auto_insurance_{id}.pdf"
         template = 'admin/pdf_auto_request.html'
+        
+        # Get image paths
+        carte_rose_path = get_image_path(request.carte_rose)
+        ancient_card_path = get_image_path(request.ancient_card)
+        
         data = {
             'request': request,
             'now': datetime.now(),
             'current_user': current_user,
-            'images': {
-                'carte_rose': get_image_data(request.carte_rose),
-                'ancient_card': get_image_data(request.ancient_card)
-            }
+            'carte_rose_path': carte_rose_path,
+            'ancient_card_path': ancient_card_path
         }
+        
+        # Create callback for images
+        def link_callback(uri, _):
+            if uri == request.carte_rose:
+                return carte_rose_path
+            elif uri == request.ancient_card:
+                return ancient_card_path
+            return None
+            
     elif type == 'comesa':
         request = ComesaInsuranceRequest.query.get_or_404(id)
         filename = f"comesa_insurance_{id}.pdf"
         template = 'admin/pdf_comesa_request.html'
+        
+        # Get image paths
+        carte_rose_path = get_image_path(request.carte_rose)
+        ancient_card_path = get_image_path(request.ancient_card)
+        
         data = {
             'request': request,
             'now': datetime.now(),
             'current_user': current_user,
-            'images': {
-                'carte_rose': get_image_data(request.carte_rose),
-                'ancient_card': get_image_data(request.ancient_card)
-            }
+            'carte_rose_path': carte_rose_path,
+            'ancient_card_path': ancient_card_path
         }
+        
+        # Create callback for images
+        def link_callback(uri, _):
+            if uri == request.carte_rose:
+                return carte_rose_path
+            elif uri == request.ancient_card:
+                return ancient_card_path
+            return None
+            
     elif type == 'travel':
         request = TravelInsuranceRequest.query.get_or_404(id)
         filename = f"travel_insurance_{id}.pdf"
         template = 'admin/pdf_travel_request.html'
+        
+        # Get image path
+        passport_path = get_image_path(request.passport)
+        
         data = {
             'request': request,
             'now': datetime.now(),
             'current_user': current_user,
-            'images': {
-                'passport': get_image_data(request.passport)
-            }
+            'passport_path': passport_path
         }
+        
+        # Create callback for images
+        def link_callback(uri, _):
+            if uri == request.passport:
+                return passport_path
+            return None
+            
     elif type == 'accident':
         declaration = AccidentDeclaration.query.get_or_404(id)
         user = declaration.user
@@ -1258,6 +1354,18 @@ def download_request(type, id):
         
         filename = f"accident_declaration_{id}_with_client_models.pdf"
         template = 'admin/pdf_accident_declaration.html'
+        
+        # Prepare image paths
+        image_paths = {}
+        image_fields = [
+            'accident_image1', 'accident_image2', 'accident_image3',
+            'carte_rose_image', 'insurance_card_image', 'driving_license_image'
+        ]
+        
+        for field in image_fields:
+            filename = getattr(declaration, field)
+            image_paths[field] = get_image_path(filename)
+        
         data = {
             'declaration': declaration,
             'now': datetime.now(),
@@ -1266,24 +1374,32 @@ def download_request(type, id):
             'auto_requests': auto_requests,
             'travel_requests': travel_requests,
             'comesa_requests': comesa_requests,
-            'images': {
-                'accident_image1': get_image_data(declaration.accident_image1),
-                'accident_image2': get_image_data(declaration.accident_image2),
-                'accident_image3': get_image_data(declaration.accident_image3),
-                'carte_rose_image': get_image_data(declaration.carte_rose_image),
-                'insurance_card_image': get_image_data(declaration.insurance_card_image),
-                'driving_license_image': get_image_data(declaration.driving_license_image)
-            }
+            'image_paths': image_paths
         }
+        
+        # Create callback for images
+        def link_callback(uri, _):
+            # Check if this URI matches any of our image filenames
+            for field in image_fields:
+                filename = getattr(declaration, field)
+                if filename and uri == filename:
+                    return image_paths[field]
+            return None
     else:
         abort(404)
     
     # Render the appropriate admin template with the data
     html = render_template(template, **data)
     
-    # Generate PDF
+    # Generate PDF with images
     pdf = BytesIO()
-    pisa.CreatePDF(html, dest=pdf)
+    pisa_status = pisa.CreatePDF(html, dest=pdf, link_callback=link_callback)
+    
+    if pisa_status.err:
+        current_app.logger.error("PDF generation error: %s", pisa_status.err)
+        flash('Error generating PDF. Please try again.', 'danger')
+        return redirect(url_for('manage_requests'))
+    
     pdf.seek(0)
     
     return send_file(
@@ -1293,57 +1409,7 @@ def download_request(type, id):
         mimetype='application/pdf'
     )
 
-@app.route('/download/accident/<int:id>')
-@login_required
-def download_accident_declaration(id):
-    declaration = AccidentDeclaration.query.get_or_404(id)
-    if declaration.user_id != current_user.id:
-        abort(403)
-    
-    # Prepare image data
-    image_fields = [
-        'accident_image1', 'accident_image2', 'accident_image3',
-        'carte_rose_image', 'insurance_card_image', 'driving_license_image'
-    ]
-    image_data = {}
-    
-    for field in image_fields:
-        filename = getattr(declaration, field)
-        if filename:
-            try:
-                image_path = os.path.join('static/uploads/images', filename)
-                if os.path.exists(image_path):
-                    with open(image_path, 'rb') as f:
-                        encoded_string = base64.b64encode(f.read()).decode('utf-8')
-                        ext = os.path.splitext(filename)[1].lower().replace('.', '')
-                        if ext == 'jpg':
-                            ext = 'jpeg'
-                        image_data[field] = f"data:image/{ext};base64,{encoded_string}"
-            except Exception as e:
-                current_app.logger.error(f"Error processing image {filename}: {e}")
-                image_data[field] = None
-        else:
-            image_data[field] = None
-    
-    # Render HTML with image data
-    html = render_template(
-        'client/pdf_accident_declaration.html', 
-        declaration=declaration,
-        now=datetime.now(),
-        images=image_data
-    )
-    
-    # Create PDF
-    pdf = BytesIO()
-    pisa.CreatePDF(html, dest=pdf)
-    pdf.seek(0)
-    
-    return send_file(
-        pdf,
-        as_attachment=True,
-        download_name=f"accident_declaration_{declaration.id}.pdf",
-        mimetype='application/pdf'
-    )
+
 
 # Error handlers
 @app.errorhandler(403)
@@ -1427,10 +1493,6 @@ def after_request(response):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
-    
     return response
-
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
+if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True)
