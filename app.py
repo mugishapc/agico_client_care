@@ -39,9 +39,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'mugishapc1@gmail.com'
-app.config['MAIL_PASSWORD'] = 'oljteuieollgwxxf'
-app.config['MAIL_DEFAULT_SENDER'] = 'mugishapc1@gmail.com'
+app.config['MAIL_USERNAME'] = 'mpc0679@gmail.com'
+app.config['MAIL_PASSWORD'] = 'cgjg xxug irfw gjyp'
+app.config['MAIL_DEFAULT_SENDER'] = 'mpc0679@gmail.com'
 # Ensure cookies work correctly on mobile/HTTPS
 
 app.config['SESSION_COOKIE_HTTPONLY'] = True   # JS cannot access cookies

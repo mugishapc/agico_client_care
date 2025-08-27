@@ -24,5 +24,5 @@ class Config:
     ALLOWED_DOC_EXTENSIONS = {'pdf', 'doc', 'docx'}
    
     # Admin credentials
-    ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL') or 'mugishapc1@gmail.com'
-    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD') or '0220Mpc.'
+    ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL') or 'info@mpc.com'
+    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD') or '0220Mpc#'
