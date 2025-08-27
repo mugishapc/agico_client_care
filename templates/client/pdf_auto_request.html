@@ -41,7 +41,7 @@
     <div class="document-container">
         <div class="document-title">Carte Rose</div>
         {% if carte_rose_path %}
-            <img src="{{ request.carte_rose }}" alt="Carte Rose">
+            <img src="{{ carte_rose_path }}" alt="Carte Rose">
         {% else %}
             <p style="color: #777;">No Carte Rose provided</p>
         {% endif %}
@@ -49,7 +49,7 @@
     <div class="document-container">
         <div class="document-title">Ancient Card</div>
         {% if ancient_card_path %}
-            <img src="{{ request.ancient_card }}" alt="Ancient Card">
+            <img src="{{ ancient_card_path }}" alt="Ancient Card">
         {% else %}
             <p style="color: #777;">No Ancient Card provided</p>
         {% endif %}

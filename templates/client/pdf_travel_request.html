@@ -95,7 +95,7 @@
             <div class="value">{{ request.destination }}</div>
         </div>
         <div class="row">
-            <div class="label">Duration:</div>
+            <div class>Duration:</div>
             <div class="value">{{ request.days }} days</div>
         </div>
         <div class="row">
@@ -108,11 +108,11 @@
         </div>
     </div>
 
-    {% if images.passport %}
+    {% if passport_path %}
     <div class="document-section">
         <h2>Supporting Documents</h2>
         <div class="document-label">Passport:</div>
-        <img src="{{ images.passport }}" class="document-image" alt="Passport Image">
+        <img src="{{ passport_path }}" class="document-image" alt="Passport Image">
     </div>
     {% endif %}
 

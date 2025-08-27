@@ -117,43 +117,43 @@
             <div class="value">{{ declaration.summary }}</div>
         </div>
 
-        {% if images.accident_image1 or images.accident_image2 or images.accident_image3 %}
+        {% if image_paths.accident_image1 or image_paths.accident_image2 or image_paths.accident_image3 %}
         <div class="section">
             <h2>Accident Images</h2>
-            {% if images.accident_image1 %}
+            {% if image_paths.accident_image1 %}
             <div class="image-container">
-                <img src="{{ images.accident_image1 }}" alt="Accident Image 1">
+                <img src="{{ image_paths.accident_image1 }}" alt="Accident Image 1">
             </div>
             {% endif %}
-            {% if images.accident_image2 %}
+            {% if image_paths.accident_image2 %}
             <div class="image-container">
-                <img src="{{ images.accident_image2 }}" alt="Accident Image 2">
+                <img src="{{ image_paths.accident_image2 }}" alt="Accident Image 2">
             </div>
             {% endif %}
-            {% if images.accident_image3 %}
+            {% if image_paths.accident_image3 %}
             <div class="image-container">
-                <img src="{{ images.accident_image3 }}" alt="Accident Image 3">
+                <img src="{{ image_paths.accident_image3 }}" alt="Accident Image 3">
             </div>
             {% endif %}
         </div>
         {% endif %}
 
-        {% if images.carte_rose_image or images.insurance_card_image or images.driving_license_image %}
+        {% if image_paths.carte_rose_image or image_paths.insurance_card_image or image_paths.driving_license_image %}
         <div class="section">
             <h2>Document Images</h2>
-            {% if images.carte_rose_image %}
+            {% if image_paths.carte_rose_image %}
             <div class="image-container">
-                <img src="{{ images.carte_rose_image }}" alt="Carte Rose">
+                <img src="{{ image_paths.carte_rose_image }}" alt="Carte Rose">
             </div>
             {% endif %}
-            {% if images.insurance_card_image %}
+            {% if image_paths.insurance_card_image %}
             <div class="image-container">
-                <img src="{{ images.insurance_card_image }}" alt="Insurance Card">
+                <img src="{{ image_paths.insurance_card_image }}" alt="Insurance Card">
             </div>
             {% endif %}
-            {% if images.driving_license_image %}
+            {% if image_paths.driving_license_image %}
             <div class="image-container">
-                <img src="{{ images.driving_license_image }}" alt="Driving License">
+                <img src="{{ image_paths.driving_license_image }}" alt="Driving License">
             </div>
             {% endif %}
         </div>

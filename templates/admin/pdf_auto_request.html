@@ -191,19 +191,17 @@
         <div class="document-container">
             <div class="document-title">Carte Rose</div>
             {% if images.carte_rose %}
-                <img class="document-image" src="data:image/jpeg;base64,{{ images.carte_rose }}" alt="Carte Rose">
-            {% else %}
-                <p class="no-data">No Carte Rose provided</p>
-            {% endif %}
+    <img class="document-image" src="{{ images.carte_rose }}" alt="Carte Rose">
+{% else %}
+    <p class="no-data">No Carte Rose provided</p>
+{% endif %}
         </div>
         
-        <div class="document-container">
-            <div class="document-title">Ancient Card</div>
-            {% if images.ancient_card %}
-                <img class="document-image" src="data:image/jpeg;base64,{{ images.ancient_card }}" alt="Ancient Card">
-            {% else %}
-                <p class="no-data">No Ancient Card provided</p>
-            {% endif %}
+        {% if images.ancient_card %}
+    <img class="document-image" src="{{ images.ancient_card }}" alt="Ancient Card">
+{% else %}
+    <p class="no-data">No Ancient Card provided</p>
+{% endif %}
         </div>
     </div>
     

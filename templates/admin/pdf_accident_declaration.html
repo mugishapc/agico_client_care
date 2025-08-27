@@ -130,12 +130,12 @@
     } %}
     {% for key, image in images.items() %}
         {% if image %}
-        <div class="image-block">
-            <div class="image-title">{{ image_titles[key] }}</div>
-            <img class="document-image" src="data:image/jpeg;base64,{{ image }}" alt="{{ image_titles[key] }}">
-        </div>
-        {% endif %}
-    {% endfor %}
+    <div class="image-block">
+        <div class="image-title">{{ image_titles[key] }}</div>
+        <img class="document-image" src="{{ image }}" alt="{{ image_titles[key] }}">
+    </div>
+    {% endif %}
+{% endfor %}
 
     <div class="footer">
         <p>AgicoClient Care System - Confidential Document</p>

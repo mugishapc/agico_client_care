@@ -243,10 +243,10 @@
         <div class="document-container">
             <div class="document-title">Passport</div>
             {% if images.passport %}
-                <img class="document-image" src="data:image/jpeg;base64,{{ images.passport }}" alt="Passport">
-            {% else %}
-                <p class="no-data">No passport provided</p>
-            {% endif %}
+    <img class="document-image" src="{{ images.passport }}" alt="Passport">
+{% else %}
+    <p class="no-data">No passport provided</p>
+{% endif %}
         </div>
     </div>
     

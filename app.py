@@ -1043,29 +1043,23 @@ def download_auto_request(id):
     if request_auto.user_id != current_user.id and current_user.role != 'admin':
         abort(403)
     
-    # Prepare image data with proper file paths
-    image_data = {
-        'carte_rose': None,
-        'ancient_card': None
-    }
+    # Get the absolute path to the uploads directory
+    uploads_dir = os.path.join(app.root_path,  'uploads', 'images')
     
-    # Helper function to get image file path
+    # Helper function to check if image exists and get its absolute path
     def get_image_path(filename):
         if not filename:
             return None
-        try:
-            image_path = os.path.join(app.root_path, 'static', 'uploads', 'images', filename)
-            if os.path.exists(image_path):
-                return image_path
-        except Exception as e:
-            current_app.logger.error(f"Error finding image {filename}: {e}")
+        image_path = os.path.join(uploads_dir, filename)
+        if os.path.exists(image_path):
+            return image_path
         return None
     
     # Get image paths
     carte_rose_path = get_image_path(request_auto.carte_rose)
     ancient_card_path = get_image_path(request_auto.ancient_card)
     
-    # Render HTML with image references
+    # Render HTML with absolute file paths
     html = render_template(
         'client/pdf_auto_request.html', 
         request=request_auto,
@@ -1076,11 +1070,17 @@ def download_auto_request(id):
     
     # Create PDF with images
     pdf = BytesIO()
-    pisa_status = pisa.CreatePDF(
-        html, 
-        dest=pdf,
-        link_callback=lambda uri, _: get_image_path(uri) if uri in [request_auto.carte_rose, request_auto.ancient_card] else None
-    )
+    
+    # Custom link callback to handle file paths
+    def link_callback(uri, rel):
+        # Convert relative URIs to absolute system paths
+        if uri.startswith('/uploads/images/'):
+            path = os.path.join(app.root_path, uri[1:])
+            if os.path.exists(path):
+                return path
+        return uri
+    
+    pisa_status = pisa.CreatePDF(html, dest=pdf, link_callback=link_callback)
     
     if pisa_status.err:
         current_app.logger.error("PDF generation error: %s", pisa_status.err)
@@ -1103,22 +1103,22 @@ def download_travel_request(id):
     if request_travel.user_id != current_user.id and current_user.role != 'admin':
         abort(403)
     
-    # Helper function to get image file path
+    # Get the absolute path to the uploads directory
+    uploads_dir = os.path.join(app.root_path,  'uploads', 'images')
+    
+    # Helper function to check if image exists and get its absolute path
     def get_image_path(filename):
         if not filename:
             return None
-        try:
-            image_path = os.path.join(app.root_path, 'static', 'uploads', 'images', filename)
-            if os.path.exists(image_path):
-                return image_path
-        except Exception as e:
-            current_app.logger.error(f"Error finding image {filename}: {e}")
+        image_path = os.path.join(uploads_dir, filename)
+        if os.path.exists(image_path):
+            return image_path
         return None
     
     # Get image path
     passport_path = get_image_path(request_travel.passport)
     
-    # Render HTML with image references
+    # Render HTML with absolute file paths
     html = render_template(
         'client/pdf_travel_request.html', 
         request=request_travel,
@@ -1128,11 +1128,17 @@ def download_travel_request(id):
     
     # Create PDF with images
     pdf = BytesIO()
-    pisa_status = pisa.CreatePDF(
-        html, 
-        dest=pdf,
-        link_callback=lambda uri, _: get_image_path(uri) if uri == request_travel.passport else None
-    )
+    
+    # Custom link callback to handle file paths
+    def link_callback(uri, rel):
+        # Convert relative URIs to absolute system paths
+        if uri.startswith('/uploads/images/'):
+            path = os.path.join(app.root_path, uri[1:])
+            if os.path.exists(path):
+                return path
+        return uri
+    
+    pisa_status = pisa.CreatePDF(html, dest=pdf, link_callback=link_callback)
     
     if pisa_status.err:
         current_app.logger.error("PDF generation error: %s", pisa_status.err)
@@ -1155,23 +1161,23 @@ def download_comesa_request(id):
     if request_comesa.user_id != current_user.id and current_user.role != 'admin':
         abort(403)
     
-    # Helper function to get image file path
+    # Get the absolute path to the uploads directory
+    uploads_dir = os.path.join(app.root_path,  'uploads', 'images')
+    
+    # Helper function to check if image exists and get its absolute path
     def get_image_path(filename):
         if not filename:
             return None
-        try:
-            image_path = os.path.join(app.root_path, 'static', 'uploads', 'images', filename)
-            if os.path.exists(image_path):
-                return image_path
-        except Exception as e:
-            current_app.logger.error(f"Error finding image {filename}: {e}")
+        image_path = os.path.join(uploads_dir, filename)
+        if os.path.exists(image_path):
+            return image_path
         return None
     
     # Get image paths
     carte_rose_path = get_image_path(request_comesa.carte_rose)
     ancient_card_path = get_image_path(request_comesa.ancient_card)
     
-    # Render HTML with image references
+    # Render HTML with absolute file paths
     html = render_template(
         'client/pdf_comesa_request.html', 
         request=request_comesa,
@@ -1182,11 +1188,17 @@ def download_comesa_request(id):
     
     # Create PDF with images
     pdf = BytesIO()
-    pisa_status = pisa.CreatePDF(
-        html, 
-        dest=pdf,
-        link_callback=lambda uri, _: get_image_path(uri) if uri in [request_comesa.carte_rose, request_comesa.ancient_card] else None
-    )
+    
+    # Custom link callback to handle file paths
+    def link_callback(uri, rel):
+        # Convert relative URIs to absolute system paths
+        if uri.startswith('/uploads/images/'):
+            path = os.path.join(app.root_path, uri[1:])
+            if os.path.exists(path):
+                return path
+        return uri
+    
+    pisa_status = pisa.CreatePDF(html, dest=pdf, link_callback=link_callback)
     
     if pisa_status.err:
         current_app.logger.error("PDF generation error: %s", pisa_status.err)
@@ -1209,16 +1221,16 @@ def download_accident_declaration(id):
     if declaration.user_id != current_user.id and current_user.role != 'admin':
         abort(403)
     
-    # Helper function to get image file path
+    # Get the absolute path to the uploads directory
+    uploads_dir = os.path.join(app.root_path,  'uploads', 'images')
+    
+    # Helper function to check if image exists and get its absolute path
     def get_image_path(filename):
         if not filename:
             return None
-        try:
-            image_path = os.path.join(app.root_path, 'static', 'uploads', 'images', filename)
-            if os.path.exists(image_path):
-                return image_path
-        except Exception as e:
-            current_app.logger.error(f"Error finding image {filename}: {e}")
+        image_path = os.path.join(uploads_dir, filename)
+        if os.path.exists(image_path):
+            return image_path
         return None
     
     # Prepare image paths
@@ -1232,7 +1244,7 @@ def download_accident_declaration(id):
         filename = getattr(declaration, field)
         image_paths[field] = get_image_path(filename)
     
-    # Render HTML with image references
+    # Render HTML with absolute file paths
     html = render_template(
         'client/pdf_accident_declaration.html', 
         declaration=declaration,
@@ -1243,14 +1255,14 @@ def download_accident_declaration(id):
     # Create PDF with images
     pdf = BytesIO()
     
-    # Create a callback function for image handling
-    def link_callback(uri, _):
-        # Check if this URI matches any of our image filenames
-        for field in image_fields:
-            filename = getattr(declaration, field)
-            if filename and uri == filename:
-                return get_image_path(filename)
-        return None
+    # Custom link callback to handle file paths
+    def link_callback(uri, rel):
+        # Convert relative URIs to absolute system paths
+        if uri.startswith('/uploads/images/'):
+            path = os.path.join(app.root_path, uri[1:])
+            if os.path.exists(path):
+                return path
+        return uri
     
     pisa_status = pisa.CreatePDF(html, dest=pdf, link_callback=link_callback)
     
@@ -1268,116 +1280,83 @@ def download_accident_declaration(id):
         mimetype='application/pdf'
     )
 
+
 @app.route('/admin/download/<string:type>/<int:id>')
 @login_required
 @admin_required
 def download_request(type, id):
-    # Helper function to get image file path
-    def get_image_path(filename):
-        if not filename:
-            return None
-        try:
-            image_path = os.path.join(app.root_path, 'static', 'uploads', 'images', filename)
-            if os.path.exists(image_path):
-                return image_path
-        except Exception as e:
-            current_app.logger.error(f"Error finding image {filename}: {e}")
-        return None
-
     if type == 'auto':
-        request = AutoInsuranceRequest.query.get_or_404(id)
+        request_obj = AutoInsuranceRequest.query.get_or_404(id)
         filename = f"auto_insurance_{id}.pdf"
         template = 'admin/pdf_auto_request.html'
-        
-        # Get image paths
-        carte_rose_path = get_image_path(request.carte_rose)
-        ancient_card_path = get_image_path(request.ancient_card)
-        
-        data = {
-            'request': request,
-            'now': datetime.now(),
-            'current_user': current_user,
-            'carte_rose_path': carte_rose_path,
-            'ancient_card_path': ancient_card_path
+        images = {
+            'carte_rose': get_image_path(request_obj.carte_rose),
+            'ancient_card': get_image_path(request_obj.ancient_card)
         }
-        
-        # Create callback for images
+
         def link_callback(uri, _):
-            if uri == request.carte_rose:
-                return carte_rose_path
-            elif uri == request.ancient_card:
-                return ancient_card_path
+            if uri == request_obj.carte_rose:
+                return images['carte_rose']
+            elif uri == request_obj.ancient_card:
+                return images['ancient_card']
             return None
-            
+
+        data = {'request': request_obj, 'now': datetime.now(), 'current_user': current_user, 'images': images}
+
     elif type == 'comesa':
-        request = ComesaInsuranceRequest.query.get_or_404(id)
+        request_obj = ComesaInsuranceRequest.query.get_or_404(id)
         filename = f"comesa_insurance_{id}.pdf"
         template = 'admin/pdf_comesa_request.html'
-        
-        # Get image paths
-        carte_rose_path = get_image_path(request.carte_rose)
-        ancient_card_path = get_image_path(request.ancient_card)
-        
-        data = {
-            'request': request,
-            'now': datetime.now(),
-            'current_user': current_user,
-            'carte_rose_path': carte_rose_path,
-            'ancient_card_path': ancient_card_path
+        images = {
+            'carte_rose': get_image_path(request_obj.carte_rose),
+            'ancient_card': get_image_path(request_obj.ancient_card)
         }
-        
-        # Create callback for images
+
         def link_callback(uri, _):
-            if uri == request.carte_rose:
-                return carte_rose_path
-            elif uri == request.ancient_card:
-                return ancient_card_path
+            if uri == request_obj.carte_rose:
+                return images['carte_rose']
+            elif uri == request_obj.ancient_card:
+                return images['ancient_card']
             return None
-            
+
+        data = {'request': request_obj, 'now': datetime.now(), 'current_user': current_user, 'images': images}
+
     elif type == 'travel':
-        request = TravelInsuranceRequest.query.get_or_404(id)
+        request_obj = TravelInsuranceRequest.query.get_or_404(id)
         filename = f"travel_insurance_{id}.pdf"
         template = 'admin/pdf_travel_request.html'
-        
-        # Get image path
-        passport_path = get_image_path(request.passport)
-        
-        data = {
-            'request': request,
-            'now': datetime.now(),
-            'current_user': current_user,
-            'passport_path': passport_path
-        }
-        
-        # Create callback for images
+        images = {'passport': get_image_path(request_obj.passport)}
+
         def link_callback(uri, _):
-            if uri == request.passport:
-                return passport_path
+            if uri == request_obj.passport:
+                return images['passport']
             return None
-            
+
+        data = {'request': request_obj, 'now': datetime.now(), 'current_user': current_user, 'images': images}
+
     elif type == 'accident':
         declaration = AccidentDeclaration.query.get_or_404(id)
         user = declaration.user
-        
-        # Get all related requests for this user
         auto_requests = AutoInsuranceRequest.query.filter_by(user_id=user.id).all()
         travel_requests = TravelInsuranceRequest.query.filter_by(user_id=user.id).all()
         comesa_requests = ComesaInsuranceRequest.query.filter_by(user_id=user.id).all()
-        
+
         filename = f"accident_declaration_{id}_with_client_models.pdf"
         template = 'admin/pdf_accident_declaration.html'
-        
-        # Prepare image paths
-        image_paths = {}
+
         image_fields = [
             'accident_image1', 'accident_image2', 'accident_image3',
             'carte_rose_image', 'insurance_card_image', 'driving_license_image'
         ]
-        
-        for field in image_fields:
-            filename = getattr(declaration, field)
-            image_paths[field] = get_image_path(filename)
-        
+        images = {field: get_image_path(getattr(declaration, field)) for field in image_fields}
+
+        def link_callback(uri, _):
+            for field in image_fields:
+                filename = getattr(declaration, field)
+                if filename and uri == filename:
+                    return images[field]
+            return None
+
         data = {
             'declaration': declaration,
             'now': datetime.now(),
@@ -1386,40 +1365,44 @@ def download_request(type, id):
             'auto_requests': auto_requests,
             'travel_requests': travel_requests,
             'comesa_requests': comesa_requests,
-            'image_paths': image_paths
+            'images': images
         }
-        
-        # Create callback for images
-        def link_callback(uri, _):
-            # Check if this URI matches any of our image filenames
-            for field in image_fields:
-                filename = getattr(declaration, field)
-                if filename and uri == filename:
-                    return image_paths[field]
-            return None
+
     else:
         abort(404)
-    
-    # Render the appropriate admin template with the data
+
+    # Render and generate
     html = render_template(template, **data)
-    
-    # Generate PDF with images
     pdf = BytesIO()
     pisa_status = pisa.CreatePDF(html, dest=pdf, link_callback=link_callback)
-    
+
     if pisa_status.err:
-        current_app.logger.error("PDF generation error: %s", pisa_status.err)
         flash('Error generating PDF. Please try again.', 'danger')
         return redirect(url_for('manage_requests'))
-    
+
     pdf.seek(0)
-    
-    return send_file(
-        pdf,
-        as_attachment=True,
+    return send_file(pdf, as_attachment=True,
         download_name=filename,
         mimetype='application/pdf'
     )
+
+def get_image_path(filename):
+    """
+    Return a base64 data URI of the image for embedding in PDF,
+    or None if missing.
+    """
+    if not filename:
+        return None
+
+    upload_folder = os.path.join(os.getcwd(), "uploads/images")  # adjust if different
+    file_path = os.path.join(upload_folder, filename)
+
+    if os.path.exists(file_path):
+        with open(file_path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("utf-8")
+            ext = os.path.splitext(file_path)[1][1:].lower()  # e.g. 'png', 'jpg'
+            return f"data:image/{ext};base64,{encoded}"
+    return None
 
 
 
