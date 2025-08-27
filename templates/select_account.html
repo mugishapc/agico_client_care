@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#007bff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Select Account - Agico Client Care</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #007bff;
+            --primary-dark: #0069d9;
+            --secondary: #6c757d;
+            --success: #28a745;
+            --danger: #dc3545;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --border-radius: 10px;
+            --box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #f5f8ff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 30px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .logo div {
+            background-color: #007bff;
+            color: white;
+            width: 60px;
+            height: 60px;
+            line-height: 60px;
+            border-radius: 10px;
+            margin: 0 auto 15px;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+            color: var(--dark);
+        }
+
+        .logo p {
+            color: var(--secondary);
+            font-size: 14px;
+        }
+
+        .account-info {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+        }
+
+        .account-info p {
+            margin: 0;
+            color: var(--dark);
+        }
+
+        .account-option {
+            margin-bottom: 15px;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .account-option:hover {
+            border-color: var(--primary);
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+
+        .account-option.selected {
+            border-color: var(--primary);
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+
+        .account-option input[type="radio"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .account-option label {
+            display: flex;
+            align-items: flex-start;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .account-details {
+            flex: 1;
+        }
+
+        .account-name {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+
+        .account-meta {
+            font-size: 14px;
+            color: var(--secondary);
+        }
+
+        .account-meta div {
+            margin-bottom: 3px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn:disabled {
+            background: var(--secondary);
+            cursor: not-allowed;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--secondary);
+        }
+
+        .back-link a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-info {
+            background-color: rgba(23, 162, 184, 0.1);
+            color: #0c5460;
+            border: 1px solid rgba(23, 162, 184, 0.2);
+        }
+
+        @media (max-width: 576px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .logo h1 {
+                font-size: 20px;
+            }
+            
+            body {
+                padding: 10px;
+            }
+            
+            .account-option {
+                padding: 12px;
+            }
+        }
+        
+        /* Mobile-specific optimizations */
+        @media (max-width: 400px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .btn {
+                padding: 12px;
+            }
+            
+            .account-meta {
+                font-size: 13px;
+            }
+        }
+        
+        /* Custom radio button styling */
+        input[type="radio"] {
+            accent-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <div>AG</div>
+            <h1>Agico Client Care</h1>
+            <p>Multiple Accounts Found</p>
+        </div>
+
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> We found multiple accounts with the email: <strong>{{ email }}</strong>
+        </div>
+
+        <div class="account-info">
+            <p>Please select which account you want to login to:</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('select_account') }}">
+            <input type="hidden" name="password" value="{{ password }}">
+            <input type="hidden" name="remember" value="true">
+            
+            {% for user in users %}
+            <div class="account-option" onclick="selectAccount({{ user.id }})">
+                <input type="radio" name="user_id" value="{{ user.id }}" id="user{{ user.id }}" required>
+                <label for="user{{ user.id }}">
+                    <div class="account-details">
+                        <div class="account-name">{{ user.first_name }} {{ user.last_name }}</div>
+                        <div class="account-meta">
+                            <div><i class="fas fa-phone"></i> {{ user.phone }}</div>
+                            <div><i class="fas fa-calendar"></i> Created: {{ user.created_at.strftime('%Y-%m-%d') }}</div>
+                            {% if user.role == 'admin' %}
+                            <div><i class="fas fa-star"></i> Administrator</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </label>
+            </div>
+            {% endfor %}
+            
+            <button type="submit" class="btn" id="submitBtn" disabled>Select Account</button>
+        </form>
+        
+        <div class="back-link">
+            <a href="{{ url_for('login') }}"><i class="fas fa-arrow-left"></i> Back to login</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function selectAccount(userId) {
+            // Unselect all options
+            const options = document.querySelectorAll('.account-option');
+            options.forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Select the clicked option
+            const selectedOption = document.querySelector(`.account-option input[value="${userId}"]`).closest('.account-option');
+            selectedOption.classList.add('selected');
+            
+            // Check the radio button
+            document.querySelector(`#user${userId}`).checked = true;
+            
+            // Enable submit button
+            document.getElementById('submitBtn').disabled = false;
+        }
+
+        // Add click handlers to all account options
+        document.addEventListener('DOMContentLoaded', function() {
+            const accountOptions = document.querySelectorAll('.account-option');
+            accountOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    const radio = this.querySelector('input[type="radio"]');
+                    radio.checked = true;
+                    selectAccount(radio.value);
+                });
+            });
+
+            // Enable submit if an option is already selected (on page refresh)
+            const selectedOption = document.querySelector('input[name="user_id"]:checked');
+            if (selectedOption) {
+                selectAccount(selectedOption.value);
+            }
+        });
+
+        // Prevent form submission if no option is selected
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const selectedOption = document.querySelector('input[name="user_id"]:checked');
+            if (!selectedOption) {
+                e.preventDefault();
+                alert('Please select an account to continue.');
+            }
+        });
+    </script>
+</body>
+</html>

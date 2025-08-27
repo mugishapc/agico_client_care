@@ -78,7 +78,7 @@ configure_uploads(app, (images, docs))
 # Database Models
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.String(120),  nullable=False)
     password = db.Column(db.String(100), nullable=False)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
@@ -352,11 +352,11 @@ def register():
     form = RegistrationForm()
     if form.validate_on_submit():
         try:
-            # Check if user already exists
-            existing_user = User.query.filter_by(email=form.email.data).first()
-            if existing_user:
-                flash('Email already registered. Please use a different email.', 'danger')
-                return render_template('auth/register.html', title='Register', form=form)
+            # REMOVED: Check if user already exists
+            # existing_user = User.query.filter_by(email=form.email.data).first()
+            # if existing_user:
+            #     flash('Email already registered. Please use a different email.', 'danger')
+            #     return render_template('auth/register.html', title='Register', form=form)
             
             hashed_password = generate_password_hash(form.password.data)
             user = User(
@@ -398,28 +398,62 @@ def login():
     
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
+        users = User.query.filter_by(email=form.email.data).all()
         
         # Debug logging
         print(f"Login attempt: {form.email.data}")
-        print(f"User found: {user is not None}")
-        if user:
-            print(f"Password match: {check_password_hash(user.password, form.password.data)}")
-            print(f"User role: {user.role}")
+        print(f"Users found: {len(users)}")
         
-        if user and check_password_hash(user.password, form.password.data):
-            login_user(user, remember=form.remember.data)
-            next_page = request.args.get('next')
-            
-            if user.role == 'admin':
-                return redirect(next_page) if next_page else redirect(url_for('admin_dashboard'))
+        if len(users) == 0:
+            flash('No account found with this email.', 'danger')
+        elif len(users) == 1:
+            # Single user - proceed normally
+            user = users[0]
+            if check_password_hash(user.password, form.password.data):
+                login_user(user, remember=form.remember.data)
+                next_page = request.args.get('next')
+                
+                if user.role == 'admin':
+                    return redirect(next_page) if next_page else redirect(url_for('admin_dashboard'))
+                else:
+                    return redirect(next_page) if next_page else redirect(url_for('dashboard'))
             else:
-                return redirect(next_page) if next_page else redirect(url_for('dashboard'))
+                flash('Invalid password.', 'danger')
         else:
-            flash('Login unsuccessful. Please check email and password.', 'danger')
+            # Multiple users - show selection page
+            # Verify at least one user has matching password
+            valid_user_exists = any(check_password_hash(user.password, form.password.data) for user in users)
+            
+            if valid_user_exists:
+                return render_template('auth/select_account.html', 
+                                     users=users, 
+                                     email=form.email.data,
+                                     password=form.password.data)
+            else:
+                flash('Invalid password for all accounts with this email.', 'danger')
     
     return render_template('auth/login.html', title='Login', form=form)
 
+@app.route('/select-account', methods=['POST'])
+def select_account():
+    user_id = request.form.get('user_id')
+    password = request.form.get('password')
+    remember = request.form.get('remember') == 'true'
+    
+    user = User.query.get(user_id)
+    if user and check_password_hash(user.password, password):
+        login_user(user, remember=remember)
+        next_page = request.args.get('next')
+        
+        if user.role == 'admin':
+            return redirect(next_page) if next_page else redirect(url_for('admin_dashboard'))
+        else:
+            return redirect(next_page) if next_page else redirect(url_for('dashboard'))
+    else:
+        flash('Invalid selection or password mismatch.', 'danger')
+        return redirect(url_for('login'))
+    
+    
 @app.route('/logout')
 @login_required
 def logout():
